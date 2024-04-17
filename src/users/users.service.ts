@@ -24,9 +24,10 @@ export class UsersService {
       );
     }
 
-    await user.$add('role', role.id);
+    await user.$set('role', role.id);
+    user.role = role;
 
-    return userDto;
+    return user;
   }
 
   async updateUser(id: number, userDto: CreateUserDto) {
