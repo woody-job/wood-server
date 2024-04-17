@@ -1,0 +1,12 @@
+const path = require('path');
+
+module.exports = {
+  // directory containing database seeders (data population scripts)
+  'seeders-path': path.resolve('src/database', 'seeders'),
+  // path to the directory containing database migrations (schema change scripts)
+  'migrations-path': path.resolve('src/database', 'migrations'),
+  // database configuration file
+  config: path.resolve('src/database', 'config.js'),
+  // database models path
+  'models-path': path.resolve('src/database', 'models'),
+};
