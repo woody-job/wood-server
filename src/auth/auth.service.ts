@@ -44,6 +44,22 @@ export class AuthService {
     return this.generateToken(user);
   }
 
+  async updateUser(userId: number, userDto: CreateUserDto) {
+    const existentUser = await this.userService.getUserByLogin(userDto.login);
+
+    if (!existentUser) {
+      throw new HttpException(
+        'Пользователя не существует',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const hashPassword = await bcrypt.hash(userDto.password, 5);
+    const userDtoForEdit = { ...userDto, password: hashPassword };
+
+    return this.userService.updateUser(userId, userDtoForEdit);
+  }
+
   private async generateToken(user: User) {
     const payload = {
       login: user.login,

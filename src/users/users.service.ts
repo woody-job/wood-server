@@ -51,7 +51,7 @@ export class UsersService {
     user.fullName = fullName;
     user.password = password;
 
-    if (roleId !== user.role.id) {
+    if (roleId !== user.roleId) {
       user.$set('role', roleId);
     }
 

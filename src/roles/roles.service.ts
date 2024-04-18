@@ -30,8 +30,8 @@ export class RolesService {
     return roles;
   }
 
-  async findRoleById(id: number) {
-    const role = await this.roleRepository.findByPk(id);
+  async findRoleById(roleId: number) {
+    const role = await this.roleRepository.findByPk(roleId);
 
     return role;
   }

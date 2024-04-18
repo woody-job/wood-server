@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Param, Post, Put } from '@nestjs/common';
 import { CreateUserDto } from 'src/users/dtos/create-user.dto';
 import { AuthService } from './auth.service';
 import { LoginUserDto } from 'src/users/dtos/login-user-dto';
@@ -22,5 +22,13 @@ export class AuthController {
   @Post('/register')
   register(@Body() userDto: CreateUserDto) {
     return this.authService.register(userDto);
+  }
+
+  @ApiOperation({
+    summary: 'Редактирование пользователя с хешерованием нового пароля',
+  })
+  @Put('/edit-user/:userId')
+  updateUser(@Param('userId') userId: string, @Body() userDto: CreateUserDto) {
+    return this.authService.updateUser(Number(userId), userDto);
   }
 }
