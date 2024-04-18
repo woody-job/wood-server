@@ -35,8 +35,6 @@ export class UsersController {
   @ApiResponse({ status: 200 })
   @Delete('/:id')
   delete(@Param('id') id: string) {
-    console.log('WE GET HERE');
-
     return this.usersService.deleteUser(Number(id));
   }
 
