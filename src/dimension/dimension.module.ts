@@ -5,13 +5,15 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { Dimension } from './dimension.model';
 import { WoodClass } from 'src/wood-class/wood-class.model';
 import { WoodClassModule } from 'src/wood-class/wood-class.module';
+import { WorkshopWoodPrice } from 'src/workshop-wood-prices/workshop-wood-price.model';
 
 @Module({
   providers: [DimensionService],
   controllers: [DimensionController],
   imports: [
-    SequelizeModule.forFeature([Dimension, WoodClass]),
+    SequelizeModule.forFeature([Dimension, WoodClass, WorkshopWoodPrice]),
     WoodClassModule,
   ],
+  exports: [DimensionService],
 })
 export class DimensionModule {}

@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
 import { Dimension } from 'src/dimension/dimension.model';
+import { WorkshopWoodPrice } from 'src/workshop-wood-prices/workshop-wood-price.model';
 
 interface WoodClassCreationAttrs {
   name: string;
@@ -30,4 +31,7 @@ export class WoodClass extends Model<WoodClass, WoodClassCreationAttrs> {
 
   @HasMany(() => Dimension)
   dimensions: Dimension[];
+
+  @HasMany(() => WorkshopWoodPrice)
+  workshopWoodPrices: WorkshopWoodPrice[];
 }

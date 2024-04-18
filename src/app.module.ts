@@ -11,6 +11,15 @@ import { WoodTypeModule } from './wood-type/wood-type.module';
 import { WoodClassModule } from './wood-class/wood-class.module';
 import { DimensionModule } from './dimension/dimension.module';
 import { WoodNamingModule } from './wood-naming/wood-naming.module';
+import { WorkshopModule } from './workshop/workshop.module';
+import { WorkshopWoodPricesModule } from './workshop-wood-prices/workshop-wood-prices.module';
+import { WoodClass } from './wood-class/wood-class.model';
+import { WoodType } from './wood-type/wood-type.model';
+import { WoodCondition } from './wood-condition/wood-condition.model';
+import { Dimension } from './dimension/dimension.model';
+import { WoodNaming } from './wood-naming/wood-naming.model';
+import { Workshop } from './workshop/workshop.model';
+import { WorkshopWoodPrice } from './workshop-wood-prices/workshop-wood-price.model';
 
 @Module({
   controllers: [],
@@ -26,8 +35,19 @@ import { WoodNamingModule } from './wood-naming/wood-naming.module';
       username: process.env.POSTGRES_USER,
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DATABASE,
-      models: [User, Role],
+      models: [
+        User,
+        Role,
+        WoodClass,
+        WoodType,
+        WoodCondition,
+        WoodNaming,
+        Dimension,
+        Workshop,
+        WorkshopWoodPrice,
+      ],
       autoLoadModels: true,
+      synchronize: true,
     }),
     UsersModule,
     RolesModule,
@@ -37,6 +57,8 @@ import { WoodNamingModule } from './wood-naming/wood-naming.module';
     WoodClassModule,
     DimensionModule,
     WoodNamingModule,
+    WorkshopModule,
+    WorkshopWoodPricesModule,
   ],
 })
 export class AppModule {}
