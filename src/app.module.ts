@@ -20,6 +20,10 @@ import { Dimension } from './dimension/dimension.model';
 import { WoodNaming } from './wood-naming/wood-naming.model';
 import { Workshop } from './workshop/workshop.model';
 import { WorkshopWoodPrice } from './workshop-wood-prices/workshop-wood-price.model';
+import { BeamInModule } from './beam-in/beam-in.module';
+import { BeamIn } from './beam-in/beam-in.model';
+import { BeamSizeModule } from './beam-size/beam-size.module';
+import { BeamSize } from './beam-size/beam-size.model';
 
 @Module({
   controllers: [],
@@ -45,6 +49,8 @@ import { WorkshopWoodPrice } from './workshop-wood-prices/workshop-wood-price.mo
         Dimension,
         Workshop,
         WorkshopWoodPrice,
+        BeamIn,
+        BeamSize,
       ],
       autoLoadModels: true,
       synchronize: true,
@@ -59,6 +65,8 @@ import { WorkshopWoodPrice } from './workshop-wood-prices/workshop-wood-price.mo
     WoodNamingModule,
     WorkshopModule,
     WorkshopWoodPricesModule,
+    BeamInModule,
+    BeamSizeModule,
   ],
 })
 export class AppModule {}

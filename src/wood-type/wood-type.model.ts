@@ -5,7 +5,7 @@ interface WoodTypeCreationAttrs {
   name: string;
 }
 
-@Table({ tableName: 'wood_Type', timestamps: false })
+@Table({ tableName: 'wood_type', timestamps: false })
 export class WoodType extends Model<WoodType, WoodTypeCreationAttrs> {
   @ApiProperty({ example: '1', description: 'Уникальный идентификатор' })
   @Column({

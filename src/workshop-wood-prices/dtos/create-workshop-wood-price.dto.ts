@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString, Length } from 'class-validator';
+import { IsNotEmpty, IsNumber } from 'class-validator';
 
 export class CreateWorkshopWoodPriceDto {
   @ApiProperty({ example: '15000', description: 'Ширина 1м3 доски для цеха' })
@@ -12,7 +12,7 @@ export class CreateWorkshopWoodPriceDto {
   readonly workshopId: number;
 
   @ApiProperty({ example: '12', description: 'id сечения' })
-  @IsNotEmpty({ message: 'Не должено быть пустым' })
+  @IsNotEmpty({ message: 'Не должно быть пустым' })
   @IsNumber({}, { message: 'Сечение выбрано некорректно' })
   readonly dimensionId: number;
 
