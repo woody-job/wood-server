@@ -21,7 +21,7 @@ export class WoodClassService {
       );
     }
 
-    const woodClass = this.woodClassRepository.create(woodClassDto);
+    const woodClass = await this.woodClassRepository.create(woodClassDto);
 
     return woodClass;
   }

@@ -22,7 +22,7 @@ export class WoodNamingService {
       );
     }
 
-    const woodNaming = this.woodNamingRepository.create(woodNamingDto);
+    const woodNaming = await this.woodNamingRepository.create(woodNamingDto);
 
     return woodNaming;
   }

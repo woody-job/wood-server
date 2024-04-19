@@ -22,7 +22,8 @@ export class WoodConditionService {
       );
     }
 
-    const woodCondition = this.woodConditionRepository.create(woodConditionDto);
+    const woodCondition =
+      await this.woodConditionRepository.create(woodConditionDto);
 
     return woodCondition;
   }

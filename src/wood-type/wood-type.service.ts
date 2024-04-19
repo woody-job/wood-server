@@ -22,7 +22,7 @@ export class WoodTypeService {
       );
     }
 
-    const woodType = this.woodTypeRepository.create(woodTypeDto);
+    const woodType = await this.woodTypeRepository.create(woodTypeDto);
 
     return woodType;
   }

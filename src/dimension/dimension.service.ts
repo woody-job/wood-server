@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Dimension } from './dimension.model';
 import { WoodClassService } from 'src/wood-class/wood-class.service';
 import { CreateDimensionDto } from './dtos/create-dimension.dto';
+import { WoodClass } from 'src/wood-class/wood-class.model';
 
 @Injectable()
 export class DimensionService {
@@ -97,7 +98,10 @@ export class DimensionService {
 
   async getAllDimensions() {
     const dimensions = await this.dimensionRepository.findAll({
-      include: { all: true },
+      include: [WoodClass],
+      attributes: {
+        exclude: ['woodClassId'],
+      },
     });
 
     return dimensions;
@@ -108,7 +112,10 @@ export class DimensionService {
       where: {
         woodClassId,
       },
-      include: { all: true },
+      include: [WoodClass],
+      attributes: {
+        exclude: ['woodClassId'],
+      },
     });
 
     return dimensions;
@@ -122,5 +129,11 @@ export class DimensionService {
     }
 
     await dimension.destroy();
+  }
+
+  async findDimensionById(dimensionId: number) {
+    const dimension = await this.dimensionRepository.findByPk(dimensionId);
+
+    return dimension;
   }
 }

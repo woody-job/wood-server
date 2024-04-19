@@ -19,7 +19,7 @@ export class RolesService {
       );
     }
 
-    const role = this.roleRepository.create(roleDto);
+    const role = await this.roleRepository.create(roleDto);
 
     return role;
   }
