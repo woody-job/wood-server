@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
+import { BeamIn } from 'src/beam-in/beam-in.model';
 import { WorkshopWoodPrice } from 'src/workshop-wood-prices/workshop-wood-price.model';
 
 interface WorkshopCreationAttrs {
@@ -42,4 +43,7 @@ export class Workshop extends Model<Workshop, WorkshopCreationAttrs> {
 
   @HasMany(() => WorkshopWoodPrice)
   workshopWoodPrices: WorkshopWoodPrice[];
+
+  @HasMany(() => BeamIn)
+  beamIns: BeamIn[];
 }
