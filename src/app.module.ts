@@ -24,6 +24,10 @@ import { BeamInModule } from './beam-in/beam-in.module';
 import { BeamIn } from './beam-in/beam-in.model';
 import { BeamSizeModule } from './beam-size/beam-size.module';
 import { BeamSize } from './beam-size/beam-size.model';
+import { DryerChamberModule } from './dryer-chamber/dryer-chamber.module';
+import { DryerChamber } from './dryer-chamber/dryer-chamber.model';
+import { DryerChamberDataModule } from './dryer-chamber-data/dryer-chamber-data.module';
+import { DryerChamberData } from './dryer-chamber-data/dryer-chamber-data.model';
 
 @Module({
   controllers: [],
@@ -51,6 +55,8 @@ import { BeamSize } from './beam-size/beam-size.model';
         WorkshopWoodPrice,
         BeamIn,
         BeamSize,
+        DryerChamber,
+        DryerChamberData,
       ],
       autoLoadModels: true,
       synchronize: true,
@@ -67,6 +73,8 @@ import { BeamSize } from './beam-size/beam-size.model';
     WorkshopWoodPricesModule,
     BeamInModule,
     BeamSizeModule,
+    DryerChamberModule,
+    DryerChamberDataModule,
   ],
 })
 export class AppModule {}
