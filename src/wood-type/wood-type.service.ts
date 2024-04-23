@@ -42,4 +42,10 @@ export class WoodTypeService {
 
     return woodTypees;
   }
+
+  async findWoodTypeById(woodTypeId: number) {
+    const woodType = await this.woodTypeRepository.findByPk(woodTypeId);
+
+    return woodType;
+  }
 }

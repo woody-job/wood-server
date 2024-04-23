@@ -8,6 +8,7 @@ import {
   Model,
   Table,
 } from 'sequelize-typescript';
+import { DryerChamberData } from 'src/dryer-chamber-data/dryer-chamber-data.model';
 import { WoodClass } from 'src/wood-class/wood-class.model';
 import { WorkshopWoodPrice } from 'src/workshop-wood-prices/workshop-wood-price.model';
 
@@ -63,4 +64,7 @@ export class Dimension extends Model<Dimension, DimensionCreationAttrs> {
 
   @HasMany(() => WorkshopWoodPrice)
   workshopWoodPrices: WorkshopWoodPrice[];
+
+  @HasMany(() => DryerChamberData)
+  dryerChamberDatas: DryerChamberData[];
 }
