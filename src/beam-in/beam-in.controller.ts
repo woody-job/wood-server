@@ -11,6 +11,7 @@ import {
 import { AddBeamInDto } from './dtos/add-beam-in.dto';
 import { BeamInService } from './beam-in.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { UpdateBeamInDto } from './dtos/update-beam-in.dto';
 
 @ApiTags('Вход леса в цеха')
 @Controller('beam-in')
@@ -25,7 +26,10 @@ export class BeamInController {
 
   @ApiOperation({ summary: 'Редактирование записи входа леса в цех' })
   @Put('/:beamInId')
-  edit(@Param('beamInId') beamInId: string, @Body() beamInDto: AddBeamInDto) {
+  edit(
+    @Param('beamInId') beamInId: string,
+    @Body() beamInDto: UpdateBeamInDto,
+  ) {
     return this.beamInService.editBeamGoneToWorkshop(
       Number(beamInId),
       beamInDto,

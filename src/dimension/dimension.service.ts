@@ -12,6 +12,22 @@ export class DimensionService {
     private woodClassService: WoodClassService,
   ) {}
 
+  async fixDimensions() {
+    // do this only once
+    const dimensions = await this.dimensionRepository.findAll();
+
+    Promise.all(
+      dimensions.map((dimension) => {
+        dimension.volume =
+          (dimension.width / 1000) *
+          (dimension.thickness / 1000) *
+          dimension.length;
+
+        return dimension.save();
+      }),
+    );
+  }
+
   async createDimension(dimensionDto: CreateDimensionDto) {
     const { woodClassId, width, thickness, length } = dimensionDto;
 
@@ -42,6 +58,7 @@ export class DimensionService {
       width,
       thickness,
       length,
+      volume: (width / 1000) * (thickness / 1000) * length,
     });
 
     await dimension.$set('woodClass', woodClassId);
@@ -86,6 +103,8 @@ export class DimensionService {
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    dimension.volume = (width / 1000) * (thickness / 1000) * length;
 
     if (woodClassId !== dimension.woodClassId) {
       dimension.$set('woodClass', woodClassId);

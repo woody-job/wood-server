@@ -8,6 +8,7 @@ import { Op, Sequelize } from 'sequelize';
 import * as moment from 'moment';
 import { BeamSizeService } from 'src/beam-size/beam-size.service';
 import { BeamSize } from 'src/beam-size/beam-size.model';
+import { UpdateBeamInDto } from './dtos/update-beam-in.dto';
 
 @Injectable()
 export class BeamInService {
@@ -21,11 +22,6 @@ export class BeamInService {
   async addBeamToWorkshop(beamInDto: AddBeamInDto) {
     const { beamSizeId, date, amount, workshopId } = beamInDto;
 
-    // В dto date - optional
-    if (!date) {
-      throw new HttpException('Дата не предоставлена', HttpStatus.BAD_REQUEST);
-    }
-
     const momentDate = moment(date);
 
     const year = momentDate.year();
@@ -38,7 +34,7 @@ export class BeamInService {
       where: {
         [Op.and]: Sequelize.where(
           Sequelize.fn('date_trunc', 'day', Sequelize.col('date')),
-          '=',
+          Op.eq,
           `${year}-${month}-${day}`,
         ),
         beamSizeId,
@@ -50,11 +46,6 @@ export class BeamInService {
       await existentBeamIn.save();
 
       return existentBeamIn;
-    }
-
-    // В dto workshopId - optional
-    if (!workshopId) {
-      throw new HttpException('Цех не предоставлен', HttpStatus.BAD_REQUEST);
     }
 
     const workshop = await this.workshopService.findWorkshopById(workshopId);
@@ -86,7 +77,7 @@ export class BeamInService {
     return beamIn;
   }
 
-  async editBeamGoneToWorkshop(beamInId: number, beamInDto: AddBeamInDto) {
+  async editBeamGoneToWorkshop(beamInId: number, beamInDto: UpdateBeamInDto) {
     const { beamSizeId, amount } = beamInDto;
 
     const beamIn = await this.beamInRepository.findByPk(beamInId);
@@ -112,7 +103,8 @@ export class BeamInService {
       beamIn.beamSize = beamSize;
     }
 
-    beamIn.amount = beamIn.amount + amount;
+    beamIn.amount = amount;
+    await beamIn.save();
 
     return beamIn;
   }
@@ -131,17 +123,13 @@ export class BeamInService {
     const momentStartDate = moment(startDate);
     const momentEndDate = moment(endDate);
 
-    momentStartDate.set('hour', 0);
-    momentStartDate.set('minute', 0);
-    momentStartDate.set('second', 0);
-    momentStartDate.set('millisecond', 0);
+    const startYear = momentStartDate.year();
+    const startMonth = momentStartDate.month() + 1;
+    const startDay = momentStartDate.date();
 
-    momentEndDate.set('hour', 0);
-    momentEndDate.set('minute', 0);
-    momentEndDate.set('second', 0);
-    momentEndDate.set('millisecond', 0);
-
-    momentEndDate.set('day', momentEndDate.date() + 1);
+    const endYear = momentEndDate.year();
+    const endMonth = momentEndDate.month() + 1;
+    const endDay = momentEndDate.date();
 
     const beamIns = await this.beamInRepository.findAll({
       include: [BeamSize],
@@ -153,14 +141,23 @@ export class BeamInService {
         ...(startDate && endDate
           ? {
               date: {
-                [Op.and]: {
-                  [Op.gte]: momentStartDate.toISOString(),
-                  [Op.lt]: momentEndDate.toISOString(),
-                },
+                [Op.and]: [
+                  Sequelize.where(
+                    Sequelize.fn('date_trunc', 'day', Sequelize.col('date')),
+                    Op.gte,
+                    `${startYear}-${startMonth}-${startDay}`,
+                  ),
+                  Sequelize.where(
+                    Sequelize.fn('date_trunc', 'day', Sequelize.col('date')),
+                    Op.lte,
+                    `${endYear}-${endMonth}-${endDay}`,
+                  ),
+                ],
               },
             }
           : {}),
       },
+      order: [['date', 'DESC']],
     });
 
     return beamIns;

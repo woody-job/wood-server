@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Column, DataType, Model, Table } from 'sequelize-typescript';
+import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
+import { WorkshopDailyData } from 'src/workshop-daily-data/workshop-daily-data.model';
 
 interface WoodNamingCreationAttrs {
   name: string;
@@ -26,4 +27,7 @@ export class WoodNaming extends Model<WoodNaming, WoodNamingCreationAttrs> {
     allowNull: false,
   })
   name: string;
+
+  @HasMany(() => WorkshopDailyData)
+  workshopDailyDatas: WorkshopDailyData[];
 }

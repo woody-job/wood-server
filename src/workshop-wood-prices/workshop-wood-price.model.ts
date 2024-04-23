@@ -4,11 +4,13 @@ import {
   Column,
   DataType,
   ForeignKey,
+  HasMany,
   Model,
   Table,
 } from 'sequelize-typescript';
 import { Dimension } from 'src/dimension/dimension.model';
 import { WoodClass } from 'src/wood-class/wood-class.model';
+import { WorkshopOut } from 'src/workshop-out/workshop-out.model';
 import { Workshop } from 'src/workshop/workshop.model';
 
 interface WorkshopWoodPriceCreationAttrs {
@@ -72,4 +74,7 @@ export class WorkshopWoodPrice extends Model<
   })
   @BelongsTo(() => WoodClass)
   woodClass: WoodClass;
+
+  @HasMany(() => WorkshopOut)
+  workshopOuts: WorkshopOut[];
 }

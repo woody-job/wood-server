@@ -141,4 +141,24 @@ export class WorkshopWoodPricesService {
 
     return workshopWoodPrices;
   }
+
+  async findWorkshopWoodPriceByParams({
+    workshopId,
+    woodClassId,
+    dimensionId,
+  }: {
+    workshopId: number;
+    woodClassId: number;
+    dimensionId: number;
+  }) {
+    const workshopWoodPrice = await this.workshopWoodPriceRepository.findOne({
+      where: {
+        workshopId,
+        woodClassId,
+        dimensionId,
+      },
+    });
+
+    return workshopWoodPrice;
+  }
 }
