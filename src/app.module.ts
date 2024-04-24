@@ -28,6 +28,10 @@ import { DryerChamberModule } from './dryer-chamber/dryer-chamber.module';
 import { DryerChamber } from './dryer-chamber/dryer-chamber.model';
 import { DryerChamberDataModule } from './dryer-chamber-data/dryer-chamber-data.module';
 import { DryerChamberData } from './dryer-chamber-data/dryer-chamber-data.model';
+import { WorkshopDailyDataModule } from './workshop-daily-data/workshop-daily-data.module';
+import { WorkshopDailyData } from './workshop-daily-data/workshop-daily-data.model';
+import { WorkshopOutModule } from './workshop-out/workshop-out.module';
+import { WorkshopOut } from './workshop-out/workshop-out.model';
 
 @Module({
   controllers: [],
@@ -57,6 +61,8 @@ import { DryerChamberData } from './dryer-chamber-data/dryer-chamber-data.model'
         BeamSize,
         DryerChamber,
         DryerChamberData,
+        WorkshopDailyData,
+        WorkshopOut,
       ],
       autoLoadModels: true,
       synchronize: true,
@@ -75,6 +81,8 @@ import { DryerChamberData } from './dryer-chamber-data/dryer-chamber-data.model'
     BeamSizeModule,
     DryerChamberModule,
     DryerChamberDataModule,
+    WorkshopDailyDataModule,
+    WorkshopOutModule,
   ],
 })
 export class AppModule {}

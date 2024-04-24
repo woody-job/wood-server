@@ -1,10 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsDateString,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-} from 'class-validator';
+import { IsDateString, IsNotEmpty, IsNumber } from 'class-validator';
 
 export class AddBeamInDto {
   @ApiProperty({
@@ -12,7 +7,6 @@ export class AddBeamInDto {
     description: 'id цеха',
   })
   @IsNumber({}, { message: 'Цех выбран некорректно' })
-  @IsOptional()
   readonly workshopId: number;
 
   @ApiProperty({
@@ -35,6 +29,5 @@ export class AddBeamInDto {
     description: 'Дата в формате ISO 8601',
   })
   @IsDateString({}, { message: 'Дата имеет некорректный формат (не ISO8601)' })
-  @IsOptional()
   readonly date: string;
 }

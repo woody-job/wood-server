@@ -7,6 +7,8 @@ import { WoodClass } from 'src/wood-class/wood-class.model';
 import { WoodClassModule } from 'src/wood-class/wood-class.module';
 import { WorkshopWoodPrice } from 'src/workshop-wood-prices/workshop-wood-price.model';
 import { DryerChamberData } from 'src/dryer-chamber-data/dryer-chamber-data.model';
+import { WorkshopDailyData } from 'src/workshop-daily-data/workshop-daily-data.model';
+import { WorkshopOut } from 'src/workshop-out/workshop-out.model';
 
 @Module({
   providers: [DimensionService],
@@ -17,6 +19,8 @@ import { DryerChamberData } from 'src/dryer-chamber-data/dryer-chamber-data.mode
       WoodClass,
       WorkshopWoodPrice,
       DryerChamberData,
+      WorkshopDailyData,
+      WorkshopOut,
     ]),
     WoodClassModule,
   ],

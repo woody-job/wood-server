@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
 import { BeamIn } from 'src/beam-in/beam-in.model';
+import { WorkshopDailyData } from 'src/workshop-daily-data/workshop-daily-data.model';
+import { WorkshopOut } from 'src/workshop-out/workshop-out.model';
 import { WorkshopWoodPrice } from 'src/workshop-wood-prices/workshop-wood-price.model';
 
 interface WorkshopCreationAttrs {
@@ -46,4 +48,10 @@ export class Workshop extends Model<Workshop, WorkshopCreationAttrs> {
 
   @HasMany(() => BeamIn)
   beamIns: BeamIn[];
+
+  @HasMany(() => WorkshopDailyData)
+  workshopDailyDatas: WorkshopDailyData[];
+
+  @HasMany(() => WorkshopOut)
+  workshopOuts: WorkshopOut[];
 }

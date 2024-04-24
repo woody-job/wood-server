@@ -41,8 +41,14 @@ export class WoodNamingService {
   }
 
   async getAllWoodNamings() {
-    const woodNaminges = await this.woodNamingRepository.findAll();
+    const woodNamings = await this.woodNamingRepository.findAll();
 
-    return woodNaminges;
+    return woodNamings;
+  }
+
+  async findWoodNamingById(woodNamingId: number) {
+    const woodNaming = await this.woodNamingRepository.findByPk(woodNamingId);
+
+    return woodNaming;
   }
 }

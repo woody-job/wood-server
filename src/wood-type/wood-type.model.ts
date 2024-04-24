@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
 import { DryerChamberData } from 'src/dryer-chamber-data/dryer-chamber-data.model';
+import { WorkshopOut } from 'src/workshop-out/workshop-out.model';
 
 interface WoodTypeCreationAttrs {
   name: string;
@@ -30,4 +31,7 @@ export class WoodType extends Model<WoodType, WoodTypeCreationAttrs> {
 
   @HasMany(() => DryerChamberData)
   dryerChamberDatas: DryerChamberData[];
+
+  @HasMany(() => WorkshopOut)
+  workshopOuts: WorkshopOut[];
 }

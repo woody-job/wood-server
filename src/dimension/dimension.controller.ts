@@ -25,6 +25,12 @@ export class DimensionController {
     return this.dimensionService.createDimension(dimensionDto);
   }
 
+  // TODO: RUN THIS ONCE
+  @Get('fix')
+  fix() {
+    return this.dimensionService.fixDimensions();
+  }
+
   @ApiOperation({
     summary: 'Редактирование сечения',
   })

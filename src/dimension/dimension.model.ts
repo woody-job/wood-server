@@ -10,12 +10,15 @@ import {
 } from 'sequelize-typescript';
 import { DryerChamberData } from 'src/dryer-chamber-data/dryer-chamber-data.model';
 import { WoodClass } from 'src/wood-class/wood-class.model';
+import { WorkshopDailyData } from 'src/workshop-daily-data/workshop-daily-data.model';
+import { WorkshopOut } from 'src/workshop-out/workshop-out.model';
 import { WorkshopWoodPrice } from 'src/workshop-wood-prices/workshop-wood-price.model';
 
 interface DimensionCreationAttrs {
   width: number;
   thickness: number;
   length: number;
+  volume: number;
 }
 
 @Table({ tableName: 'dimension', timestamps: false })
@@ -50,6 +53,13 @@ export class Dimension extends Model<Dimension, DimensionCreationAttrs> {
   })
   length: number;
 
+  @ApiProperty({ example: '0.095', description: 'Объем доски (м3)' })
+  @Column({
+    type: DataType.FLOAT,
+    allowNull: false,
+  })
+  volume: number;
+
   @ApiProperty({ example: '5', description: 'id сорта доски' })
   @ForeignKey(() => WoodClass)
   @Column({ field: 'wood_class_id' })
@@ -67,4 +77,10 @@ export class Dimension extends Model<Dimension, DimensionCreationAttrs> {
 
   @HasMany(() => DryerChamberData)
   dryerChamberDatas: DryerChamberData[];
+
+  @HasMany(() => WorkshopDailyData)
+  workshopDailyDatas: WorkshopDailyData[];
+
+  @HasMany(() => WorkshopOut)
+  workshopOuts: WorkshopOut[];
 }
