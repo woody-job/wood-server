@@ -44,4 +44,11 @@ export class WoodConditionService {
 
     return woodConditiones;
   }
+
+  async findWoodConditionById(woodConditionId: number) {
+    const woodCondition =
+      await this.woodConditionRepository.findByPk(woodConditionId);
+
+    return woodCondition;
+  }
 }

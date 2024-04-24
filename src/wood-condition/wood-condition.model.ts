@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Column, DataType, Model, Table } from 'sequelize-typescript';
+import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
+import { Warehouse } from 'src/warehouse/warehouse.model';
+import { WoodArrival } from 'src/wood-arrival/wood-arrival.model';
+import { WoodShipment } from 'src/wood-shipment/wood-shipment.model';
 
 interface WoodConditionCreationAttrs {
   name: string;
@@ -29,4 +32,13 @@ export class WoodCondition extends Model<
     allowNull: false,
   })
   name: string;
+
+  @HasMany(() => WoodArrival)
+  woodArrivals: WoodArrival[];
+
+  @HasMany(() => WoodShipment)
+  woodShipments: WoodShipment[];
+
+  @HasMany(() => Warehouse)
+  warehouseDatas: Warehouse[];
 }

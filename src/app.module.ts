@@ -32,6 +32,12 @@ import { WorkshopDailyDataModule } from './workshop-daily-data/workshop-daily-da
 import { WorkshopDailyData } from './workshop-daily-data/workshop-daily-data.model';
 import { WorkshopOutModule } from './workshop-out/workshop-out.module';
 import { WorkshopOut } from './workshop-out/workshop-out.model';
+import { WoodArrivalModule } from './wood-arrival/wood-arrival.module';
+import { WoodShipmentModule } from './wood-shipment/wood-shipment.module';
+import { WarehouseModule } from './warehouse/warehouse.module';
+import { WoodArrival } from './wood-arrival/wood-arrival.model';
+import { WoodShipment } from './wood-shipment/wood-shipment.model';
+import { Warehouse } from './warehouse/warehouse.model';
 
 @Module({
   controllers: [],
@@ -63,6 +69,9 @@ import { WorkshopOut } from './workshop-out/workshop-out.model';
         DryerChamberData,
         WorkshopDailyData,
         WorkshopOut,
+        WoodArrival,
+        WoodShipment,
+        Warehouse,
       ],
       autoLoadModels: true,
       synchronize: true,
@@ -83,6 +92,9 @@ import { WorkshopOut } from './workshop-out/workshop-out.model';
     DryerChamberDataModule,
     WorkshopDailyDataModule,
     WorkshopOutModule,
+    WoodArrivalModule,
+    WoodShipmentModule,
+    WarehouseModule,
   ],
 })
 export class AppModule {}

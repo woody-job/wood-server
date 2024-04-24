@@ -5,12 +5,22 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { WoodType } from './wood-type.model';
 import { DryerChamberData } from 'src/dryer-chamber-data/dryer-chamber-data.model';
 import { WorkshopOut } from 'src/workshop-out/workshop-out.model';
+import { WoodArrival } from 'src/wood-arrival/wood-arrival.model';
+import { WoodShipment } from 'src/wood-shipment/wood-shipment.model';
+import { Warehouse } from 'src/warehouse/warehouse.model';
 
 @Module({
   controllers: [WoodTypeController],
   providers: [WoodTypeService],
   imports: [
-    SequelizeModule.forFeature([WoodType, DryerChamberData, WorkshopOut]),
+    SequelizeModule.forFeature([
+      WoodType,
+      DryerChamberData,
+      WorkshopOut,
+      WoodArrival,
+      WoodShipment,
+      Warehouse,
+    ]),
   ],
   exports: [WoodTypeService],
 })
