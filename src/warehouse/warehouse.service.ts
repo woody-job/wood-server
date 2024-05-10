@@ -170,7 +170,13 @@ export class WarehouseService {
       );
     }
 
-    // TODO: STOPPED HERE 1
+    // Если новое количество <= 0, то запись на складе удаляется.
+    if (amount <= 0) {
+      await this.deleteWarehouseRecord(warehouseRecord.id);
+
+      return;
+    }
+
     warehouseRecord.amount = amount;
 
     await warehouseRecord.save();
@@ -211,5 +217,28 @@ export class WarehouseService {
     }
 
     await warehouseRecord.destroy();
+  }
+
+  async findWarehouseRecordByWoodParams({
+    woodConditionId,
+    woodClassId,
+    woodTypeId,
+    dimensionId,
+  }: {
+    woodConditionId: number;
+    woodClassId: number;
+    woodTypeId: number;
+    dimensionId: number;
+  }) {
+    const warehouseRecord = await this.warehouseRepository.findOne({
+      where: {
+        woodConditionId,
+        woodClassId,
+        woodTypeId,
+        dimensionId,
+      },
+    });
+
+    return warehouseRecord;
   }
 }

@@ -50,7 +50,7 @@ export class WorkshopOutService {
 
     if (!wetWoodCondition) {
       throw new HttpException(
-        "Состояния доски 'сырая' нет в базе",
+        "Состояния доски 'Сырая' нет в базе",
         HttpStatus.NOT_FOUND,
       );
     }
