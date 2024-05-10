@@ -14,6 +14,7 @@ import { WoodTypeService } from 'src/wood-type/wood-type.service';
 import { CreateWoodShipmentDto } from './dtos/create-wood-shipment.dto';
 import { UpdateWoodShipmentDto } from './dtos/update-wood-shipment.dto';
 import { WoodShipment } from './wood-shipment.model';
+import { WarehouseService } from 'src/warehouse/warehouse.service';
 
 @Injectable()
 export class WoodShipmentService {
@@ -24,7 +25,55 @@ export class WoodShipmentService {
     private woodTypeService: WoodTypeService,
     private dimensionService: DimensionService,
     private woodConditionService: WoodConditionService,
+    private warehouseService: WarehouseService,
   ) {}
+
+  private async updateWarehouseRecord({
+    amount,
+    woodConditionId,
+    woodClassId,
+    woodTypeId,
+    dimensionId,
+    action = 'add',
+  }: {
+    amount: number;
+    woodConditionId: number;
+    woodClassId: number;
+    woodTypeId: number;
+    dimensionId: number;
+    action?: 'add' | 'subtract';
+  }) {
+    const existentWarehouseRecord =
+      await this.warehouseService.findWarehouseRecordByWoodParams({
+        woodConditionId: woodConditionId,
+        woodClassId: woodClassId,
+        woodTypeId: woodTypeId,
+        dimensionId: dimensionId,
+      });
+
+    // Такого кейса быть не должно, просто return на всякий случай
+    if (!existentWarehouseRecord) {
+      return;
+    }
+
+    let newAmount = existentWarehouseRecord.amount;
+
+    if (action === 'add') {
+      newAmount = existentWarehouseRecord.amount + amount;
+    }
+
+    if (action === 'subtract') {
+      newAmount = existentWarehouseRecord.amount - amount;
+    }
+
+    await this.warehouseService.updateWarehouseRecord({
+      amount: newAmount,
+      woodConditionId: woodConditionId,
+      woodClassId: woodClassId,
+      woodTypeId: woodTypeId,
+      dimensionId: dimensionId,
+    });
+  }
 
   async createWoodShipment(woodShipmentDto: CreateWoodShipmentDto) {
     const {
@@ -72,6 +121,36 @@ export class WoodShipmentService {
       );
     }
 
+    const momentDate = moment(date);
+
+    const year = momentDate.year();
+    const month = momentDate.month() + 1;
+    const day = momentDate.date();
+
+    const existentWoodShipment = await this.woodShipmentRepository.findOne({
+      where: {
+        [Op.and]: Sequelize.where(
+          Sequelize.fn('date_trunc', 'day', Sequelize.col('date')),
+          Op.eq,
+          `${year}-${month}-${day}`,
+        ),
+        woodConditionId,
+        woodClassId,
+        woodTypeId,
+        dimensionId,
+      },
+    });
+
+    // Если отгрузка в выбранный день с выбранными параметрами доски уже существует,
+    // новая запись не создается. Просто меняется ее количество.
+    if (existentWoodShipment) {
+      existentWoodShipment.amount = existentWoodShipment.amount + amount;
+
+      await existentWoodShipment.save();
+
+      return existentWoodShipment;
+    }
+
     const woodShipment = await this.woodShipmentRepository.create({
       amount,
       date,
@@ -88,6 +167,16 @@ export class WoodShipmentService {
 
     await woodShipment.$set('dimension', dimensionId);
     woodShipment.dimension = dimension;
+
+    // Убрать доску со склада
+    await this.updateWarehouseRecord({
+      amount,
+      woodClassId,
+      woodTypeId,
+      woodConditionId,
+      dimensionId,
+      action: 'subtract',
+    });
 
     return woodShipment;
   }
@@ -107,6 +196,8 @@ export class WoodShipmentService {
         HttpStatus.NOT_FOUND,
       );
     }
+
+    const oldWoodShipmentAmount = woodShipment.amount;
 
     const dimension =
       await this.dimensionService.findDimensionById(dimensionId);
@@ -138,6 +229,29 @@ export class WoodShipmentService {
     }
 
     await woodShipment.save();
+
+    let newAmount = oldWoodShipmentAmount;
+    let action: 'add' | 'subtract' = 'subtract';
+
+    if (oldWoodShipmentAmount > woodShipment.amount) {
+      newAmount = oldWoodShipmentAmount - woodShipment.amount;
+      action = 'add';
+    }
+
+    if (oldWoodShipmentAmount < woodShipment.amount) {
+      newAmount = woodShipment.amount - oldWoodShipmentAmount;
+      action = 'subtract';
+    }
+
+    // Изменить запись на складе (сырая доска)
+    await this.updateWarehouseRecord({
+      amount: newAmount,
+      woodConditionId: woodShipment.woodConditionId,
+      woodClassId: woodShipment.woodClassId,
+      woodTypeId: woodShipment.woodTypeId,
+      dimensionId: woodShipment.dimensionId,
+      action: action,
+    });
 
     return woodShipment;
   }
@@ -211,5 +325,15 @@ export class WoodShipmentService {
     }
 
     await woodShipment.destroy();
+
+    // Изменить запись на складе (сырая доска)
+    await this.updateWarehouseRecord({
+      amount: woodShipment.amount,
+      woodConditionId: woodShipment.woodConditionId,
+      woodClassId: woodShipment.woodClassId,
+      woodTypeId: woodShipment.woodTypeId,
+      dimensionId: woodShipment.dimensionId,
+      action: 'add',
+    });
   }
 }

@@ -30,7 +30,6 @@ import { WorkshopOutModule } from 'src/workshop-out/workshop-out.module';
     WoodTypeModule,
     DimensionModule,
     WoodConditionModule,
-    forwardRef(() => WarehouseModule),
   ],
   exports: [WoodArrivalService],
 })

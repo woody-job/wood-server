@@ -14,9 +14,6 @@ import { WoodClass } from 'src/wood-class/wood-class.model';
 import { WoodType } from 'src/wood-type/wood-type.model';
 import { Dimension } from 'src/dimension/dimension.model';
 import { WoodCondition } from 'src/wood-condition/wood-condition.model';
-import { WarehouseService } from 'src/warehouse/warehouse.service';
-import { WorkshopOut } from 'src/workshop-out/workshop-out.model';
-import { WorkshopOutService } from 'src/workshop-out/workshop-out.service';
 
 @Injectable()
 export class WoodArrivalService {
@@ -27,7 +24,6 @@ export class WoodArrivalService {
     private woodTypeService: WoodTypeService,
     private dimensionService: DimensionService,
     private woodConditionService: WoodConditionService,
-    private warehouseService: WarehouseService,
   ) {}
 
   async createWoodArrival(woodArrivalDto: CreateWoodArrivalDto) {
@@ -84,8 +80,9 @@ export class WoodArrivalService {
       dimensionId,
     });
 
+    // Если поступление в выбранный день с выбранными параметрами доски уже существует,
+    // новая запись не создается. Просто меняется ее количество.
     if (existentWoodArrival) {
-      // ILUHA STOPPED HERE
       existentWoodArrival.amount = existentWoodArrival.amount + amount;
 
       await existentWoodArrival.save();
@@ -109,15 +106,6 @@ export class WoodArrivalService {
 
     await woodArrival.$set('dimension', dimensionId);
     woodArrival.dimension = dimension;
-
-    // При поступлении доски склад автоматически обновляется
-    // await this.warehouseService.createWarehouseRecord({
-    //   amount,
-    //   woodClassId,
-    //   woodTypeId,
-    //   woodConditionId,
-    //   dimensionId,
-    // });
 
     return woodArrival;
   }

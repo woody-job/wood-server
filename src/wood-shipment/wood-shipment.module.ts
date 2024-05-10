@@ -11,6 +11,7 @@ import { WoodCondition } from 'src/wood-condition/wood-condition.model';
 import { WoodConditionModule } from 'src/wood-condition/wood-condition.module';
 import { WoodType } from 'src/wood-type/wood-type.model';
 import { WoodTypeModule } from 'src/wood-type/wood-type.module';
+import { WarehouseModule } from 'src/warehouse/warehouse.module';
 
 @Module({
   providers: [WoodShipmentService],
@@ -27,6 +28,7 @@ import { WoodTypeModule } from 'src/wood-type/wood-type.module';
     WoodTypeModule,
     DimensionModule,
     WoodConditionModule,
+    WarehouseModule,
   ],
 })
 export class WoodShipmentModule {}
