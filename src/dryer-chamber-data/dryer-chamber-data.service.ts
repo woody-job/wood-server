@@ -9,6 +9,8 @@ import { WoodTypeService } from 'src/wood-type/wood-type.service';
 import { Dimension } from 'src/dimension/dimension.model';
 import { WoodClass } from 'src/wood-class/wood-class.model';
 import { WoodType } from 'src/wood-type/wood-type.model';
+import { WoodArrivalService } from 'src/wood-arrival/wood-arrival.service';
+import { WoodConditionService } from 'src/wood-condition/wood-condition.service';
 
 @Injectable()
 export class DryerChamberDataService {
@@ -19,6 +21,8 @@ export class DryerChamberDataService {
     private woodClassService: WoodClassService,
     private dryerChamberService: DryerChamberService,
     private woodTypeService: WoodTypeService,
+    private woodArrivalService: WoodArrivalService,
+    private woodConditionService: WoodConditionService,
   ) {}
 
   async getDryingWoodByDryerChamberId(dryerChamberId: number) {
@@ -163,10 +167,11 @@ export class DryerChamberDataService {
     await dryerChamberData.$set('dryerChamber', dryerChamberId);
     dryerChamberData.dryerChamber = dryerChamber;
 
+    // TODO: Убрать со склада сырую доску
+
     return dryerChamberData;
   }
 
-  // TODO: При удалении доски из сушилки, нужно пополнять таблицу входа
   async removeWoodFromChamber(dryerChamberId: number) {
     const dryerChamber =
       await this.dryerChamberService.findDryerChamberById(dryerChamberId);
@@ -196,6 +201,48 @@ export class DryerChamberDataService {
     dryerChamberData.isTakenOut = true;
 
     await dryerChamberData.save();
+
+    // Добавить запись в поступления (сухая доска)
+    const dryWoodCondition = await this.woodConditionService.findWoodConditionByName('Сухая')
+
+    if (!dryWoodCondition) {
+      throw new HttpException(
+        "Состояния доски 'Сухая' нет в базе",
+        HttpStatus.NOT_FOUND
+      )
+    }
+
+    const existentWoodArrival =
+      await this.woodArrivalService.findWoodArrivalByWoodParams({
+        date: dryerChamberData..date,
+        woodConditionId: dryWoodCondition.id,
+        woodClassId: dryerChamberData.woodClassId,
+        woodTypeId: dryerChamberData.woodTypeId,
+        dimensionId: dryerChamberData.dimensionId,
+      });
+
+      if (!existentWoodArrival) {
+        await this.woodArrivalService.createWoodArrival({
+          date: dryerChamberData..date,
+        woodConditionId: dryWoodCondition.id,
+        woodClassId: dryerChamberData.woodClassId,
+        woodTypeId: dryerChamberData.woodTypeId,
+        dimensionId: dryerChamberData.dimensionId,
+          amount: dryerChamberData.amount,
+        });
+  
+        return;
+      }
+  
+      await this.woodArrivalService.editWoodArrival(existentWoodArrival.id, {
+        // Если в текущий день уже есть поступления сырой доски с такими параметрами,
+        // то новая запись в поступлениях не создается, просто увеличивается его число
+        amount: existentWoodArrival.amount + dryerChamberData.amount,
+        woodClassId: dryerChamberData.woodClassId,
+        dimensionId: dryerChamberData.dimensionId,
+      });
+
+    // TODO: Внести на склад сухую доску
 
     return dryerChamberData;
   }
