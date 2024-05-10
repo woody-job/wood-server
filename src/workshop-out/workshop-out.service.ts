@@ -14,6 +14,8 @@ import { WoodClass } from 'src/wood-class/wood-class.model';
 import { WoodType } from 'src/wood-type/wood-type.model';
 import { Dimension } from 'src/dimension/dimension.model';
 import { UpdateWorkshopOutDto } from './dtos/update-workshop-out.dto';
+import { WoodArrivalService } from 'src/wood-arrival/wood-arrival.service';
+import { WoodConditionService } from 'src/wood-condition/wood-condition.service';
 
 @Injectable()
 export class WorkshopOutService {
@@ -25,7 +27,64 @@ export class WorkshopOutService {
     private woodClassService: WoodClassService,
     private woodTypeService: WoodTypeService,
     private dimensionService: DimensionService,
+    private woodArrivalService: WoodArrivalService,
+    private woodConditionService: WoodConditionService,
   ) {}
+
+  private async updateWoodArrivalForCreate({
+    date,
+    amount,
+    woodClassId,
+    woodTypeId,
+    dimensionId,
+  }: {
+    date: string;
+    amount: number;
+    woodClassId: number;
+    woodTypeId: number;
+    dimensionId: number;
+  }) {
+    // Добавить запись в поступления (сырая доска)
+    const wetWoodCondition =
+      await this.woodConditionService.findWoodConditionByName('Сырая');
+
+    if (!wetWoodCondition) {
+      throw new HttpException(
+        "Состояния доски 'сырая' нет в базе",
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const existentWoodArrival =
+      await this.woodArrivalService.findWoodArrivalByWoodParams({
+        date: date,
+        woodConditionId: wetWoodCondition.id,
+        woodClassId: woodClassId,
+        woodTypeId: woodTypeId,
+        dimensionId: dimensionId,
+      });
+
+    if (!existentWoodArrival) {
+      await this.woodArrivalService.createWoodArrival({
+        date: date,
+        woodConditionId: wetWoodCondition.id,
+        woodClassId: woodClassId,
+        woodTypeId: woodTypeId,
+        dimensionId: dimensionId,
+        amount: amount,
+      });
+
+      return;
+    }
+
+    await this.woodArrivalService.editWoodArrival(existentWoodArrival.id, {
+      // Если в текущий день уже есть поступления сырой доски с такими параметрами,
+      // то новая запись в поступлениях не создается, просто увеличивается его число
+      amount: existentWoodArrival.amount + amount,
+      woodClassId: woodClassId,
+      dimensionId: dimensionId,
+    });
+  }
 
   async addWoodOutputToWorkshop(workshopOutDto: CreateWorkshopOutDto) {
     const { date, amount, workshopId, woodClassId, woodTypeId, dimensionId } =
@@ -56,6 +115,14 @@ export class WorkshopOutService {
     if (existentWorkshopOut) {
       existentWorkshopOut.amount = existentWorkshopOut.amount + amount;
       await existentWorkshopOut.save();
+
+      await this.updateWoodArrivalForCreate({
+        date: existentWorkshopOut.date,
+        amount: existentWorkshopOut.amount,
+        woodClassId: existentWorkshopOut.woodClassId,
+        woodTypeId: existentWorkshopOut.woodTypeId,
+        dimensionId: existentWorkshopOut.dimensionId,
+      });
 
       return existentWorkshopOut;
     }
@@ -128,6 +195,14 @@ export class WorkshopOutService {
     await workshopOut.$set('dimension', dimensionId);
     workshopOut.dimension = dimension;
 
+    await this.updateWoodArrivalForCreate({
+      date: workshopOut.date,
+      amount: workshopOut.amount,
+      woodClassId: workshopOut.woodClassId,
+      woodTypeId: workshopOut.woodTypeId,
+      dimensionId: workshopOut.dimensionId,
+    });
+
     return workshopOut;
   }
 
@@ -146,6 +221,8 @@ export class WorkshopOutService {
         HttpStatus.NOT_FOUND,
       );
     }
+
+    const oldWorkshopOutAmount = workshopOut.amount;
 
     const woodClass =
       await this.woodClassService.findWoodClassById(woodClassId);
@@ -206,6 +283,72 @@ export class WorkshopOutService {
 
     workshopOut.amount = amount;
     await workshopOut.save();
+
+    // Изменить запись о поступлениях (сырая доска)
+    const wetWoodCondition =
+      await this.woodConditionService.findWoodConditionByName('Сырая');
+
+    if (!wetWoodCondition) {
+      throw new HttpException(
+        "Состояния доски 'сырая' нет в базе",
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const existentWoodArrival =
+      await this.woodArrivalService.findWoodArrivalByWoodParams({
+        date: workshopOut.date,
+        woodConditionId: wetWoodCondition.id,
+        woodClassId: workshopOut.woodClassId,
+        woodTypeId: workshopOut.woodTypeId,
+        dimensionId: workshopOut.dimensionId,
+      });
+
+    if (!existentWoodArrival) {
+      // Такого кейса в принципе быть не должно, но, все-таки, если по какой-то причине
+      // выход из цеха, который мы редактируем, есть, а записи о поступлениях нет, то
+      // создается новая запись в поступлениях
+      await this.woodArrivalService.createWoodArrival({
+        date: workshopOut.date,
+        woodConditionId: wetWoodCondition.id,
+        woodClassId: workshopOut.woodClassId,
+        woodTypeId: workshopOut.woodTypeId,
+        dimensionId: workshopOut.dimensionId,
+        amount: workshopOut.amount,
+      });
+    } else {
+      let newAmount = existentWoodArrival.amount;
+
+      if (oldWorkshopOutAmount > workshopOut.amount) {
+        newAmount =
+          existentWoodArrival.amount -
+          (oldWorkshopOutAmount - workshopOut.amount);
+
+        // Проверка на дурачка | на случай, если количество в записи поступлений собирается стать отрицательной
+        if (newAmount < 0) {
+          throw new HttpException(
+            `В записи поступлений, привязанной к текущему выходу из цеха, 
+            только ${existentWoodArrival.amount} доски(досок). 
+            Нельзя изменить количество выхода на ${workshopOut.amount}`,
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+
+      if (oldWorkshopOutAmount < workshopOut.amount) {
+        newAmount =
+          existentWoodArrival.amount +
+          (workshopOut.amount - oldWorkshopOutAmount);
+      }
+
+      await this.woodArrivalService.editWoodArrival(existentWoodArrival.id, {
+        // Если в текущий день уже есть поступления сырой доски с такими параметрами,
+        // то новая запись в поступлениях не создается, просто меняется его число
+        amount: newAmount,
+        woodClassId: workshopOut.woodClassId,
+        dimensionId: workshopOut.dimensionId,
+      });
+    }
 
     return workshopOut;
   }
@@ -276,5 +419,66 @@ export class WorkshopOutService {
     }
 
     await workshopOut.destroy();
+
+    // Изменить запись о поступлениях (сырая доска)
+    const wetWoodCondition =
+      await this.woodConditionService.findWoodConditionByName('Сырая');
+
+    if (!wetWoodCondition) {
+      throw new HttpException(
+        "Состояния доски 'сырая' нет в базе",
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const existentWoodArrival =
+      await this.woodArrivalService.findWoodArrivalByWoodParams({
+        date: workshopOut.date,
+        woodConditionId: wetWoodCondition.id,
+        woodClassId: workshopOut.woodClassId,
+        woodTypeId: workshopOut.woodTypeId,
+        dimensionId: workshopOut.dimensionId,
+      });
+
+    if (!existentWoodArrival) {
+      // Такого кейса в принципе быть не должно
+
+      return;
+    }
+
+    let newAmount = existentWoodArrival.amount - workshopOut.amount;
+
+    if (newAmount < 0) {
+      throw new HttpException(
+        `В записи поступлений, привязанной к текущему выходу из цеха, 
+          есть только ${existentWoodArrival.amount} доски(досок). 
+          Нельзя изменить количество выхода на ${workshopOut.amount}. 
+          Выход из цеха был удален`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (newAmount === 0) {
+      // Если новое количество доски в поступлении становится равным нулю, то запись
+      // удаляется
+      await this.woodArrivalService.deleteWoodArrival(existentWoodArrival.id);
+
+      return;
+    }
+
+    await this.woodArrivalService.editWoodArrival(existentWoodArrival.id, {
+      // Если в текущий день уже есть поступления сырой доски с такими параметрами,
+      // то новая запись в поступлениях не создается, просто меняется его число
+      amount: newAmount,
+      woodClassId: workshopOut.woodClassId,
+      dimensionId: workshopOut.dimensionId,
+    });
+  }
+
+  async findWorkshopOutById(workshopOutId: number) {
+    const workshopOut =
+      await this.workshopOutRepository.findByPk(workshopOutId);
+
+    return workshopOut;
   }
 }

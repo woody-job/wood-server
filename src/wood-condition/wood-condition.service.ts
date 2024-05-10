@@ -51,4 +51,12 @@ export class WoodConditionService {
 
     return woodCondition;
   }
+
+  async findWoodConditionByName(name: string) {
+    const woodCondition = await this.woodConditionRepository.findOne({
+      where: { name },
+    });
+
+    return woodCondition;
+  }
 }

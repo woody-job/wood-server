@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { WoodArrivalService } from './wood-arrival.service';
 import { WoodArrivalController } from './wood-arrival.controller';
 import { SequelizeModule } from '@nestjs/sequelize';
@@ -12,6 +12,8 @@ import { WoodTypeModule } from 'src/wood-type/wood-type.module';
 import { DimensionModule } from 'src/dimension/dimension.module';
 import { WoodConditionModule } from 'src/wood-condition/wood-condition.module';
 import { WarehouseModule } from 'src/warehouse/warehouse.module';
+import { WorkshopOut } from 'src/workshop-out/workshop-out.model';
+import { WorkshopOutModule } from 'src/workshop-out/workshop-out.module';
 
 @Module({
   providers: [WoodArrivalService],
@@ -28,7 +30,8 @@ import { WarehouseModule } from 'src/warehouse/warehouse.module';
     WoodTypeModule,
     DimensionModule,
     WoodConditionModule,
-    WarehouseModule,
+    forwardRef(() => WarehouseModule),
   ],
+  exports: [WoodArrivalService],
 })
 export class WoodArrivalModule {}

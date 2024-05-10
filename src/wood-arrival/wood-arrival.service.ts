@@ -15,6 +15,8 @@ import { WoodType } from 'src/wood-type/wood-type.model';
 import { Dimension } from 'src/dimension/dimension.model';
 import { WoodCondition } from 'src/wood-condition/wood-condition.model';
 import { WarehouseService } from 'src/warehouse/warehouse.service';
+import { WorkshopOut } from 'src/workshop-out/workshop-out.model';
+import { WorkshopOutService } from 'src/workshop-out/workshop-out.service';
 
 @Injectable()
 export class WoodArrivalService {
@@ -74,6 +76,23 @@ export class WoodArrivalService {
       );
     }
 
+    const existentWoodArrival = await this.findWoodArrivalByWoodParams({
+      date,
+      woodConditionId,
+      woodClassId,
+      woodTypeId,
+      dimensionId,
+    });
+
+    if (existentWoodArrival) {
+      // ILUHA STOPPED HERE
+      existentWoodArrival.amount = existentWoodArrival.amount + amount;
+
+      await existentWoodArrival.save();
+
+      return existentWoodArrival;
+    }
+
     const woodArrival = await this.woodArrivalRepository.create({
       amount,
       date,
@@ -92,13 +111,13 @@ export class WoodArrivalService {
     woodArrival.dimension = dimension;
 
     // При поступлении доски склад автоматически обновляется
-    await this.warehouseService.createWarehouseRecord({
-      amount,
-      woodClassId,
-      woodTypeId,
-      woodConditionId,
-      dimensionId,
-    });
+    // await this.warehouseService.createWarehouseRecord({
+    //   amount,
+    //   woodClassId,
+    //   woodTypeId,
+    //   woodConditionId,
+    //   dimensionId,
+    // });
 
     return woodArrival;
   }
@@ -148,7 +167,6 @@ export class WoodArrivalService {
       woodArrival.woodClass = woodClass;
     }
 
-    // TODO: STOPPED HERE 2
     await woodArrival.save();
 
     return woodArrival;
@@ -223,5 +241,41 @@ export class WoodArrivalService {
     }
 
     await woodArrival.destroy();
+  }
+
+  async findWoodArrivalByWoodParams({
+    date,
+    woodConditionId,
+    woodClassId,
+    woodTypeId,
+    dimensionId,
+  }: {
+    date: string;
+    woodConditionId: number;
+    woodClassId: number;
+    woodTypeId: number;
+    dimensionId: number;
+  }) {
+    const momentDate = moment(date);
+
+    const year = momentDate.year();
+    const month = momentDate.month() + 1;
+    const day = momentDate.date();
+
+    const woodArrival = await this.woodArrivalRepository.findOne({
+      where: {
+        [Op.and]: Sequelize.where(
+          Sequelize.fn('date_trunc', 'day', Sequelize.col('date')),
+          Op.eq,
+          `${year}-${month}-${day}`,
+        ),
+        woodConditionId,
+        woodClassId,
+        woodTypeId,
+        dimensionId,
+      },
+    });
+
+    return woodArrival;
   }
 }
