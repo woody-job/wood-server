@@ -15,8 +15,7 @@ import { WoodTypeModule } from 'src/wood-type/wood-type.module';
 import { DimensionModule } from 'src/dimension/dimension.module';
 import { WoodConditionModule } from 'src/wood-condition/wood-condition.module';
 import { WoodArrivalModule } from 'src/wood-arrival/wood-arrival.module';
-import { WoodArrival } from 'src/wood-arrival/wood-arrival.model';
-import { WarehouseService } from 'src/warehouse/warehouse.service';
+import { WarehouseModule } from 'src/warehouse/warehouse.module';
 
 @Module({
   controllers: [WorkshopOutController],
@@ -37,7 +36,7 @@ import { WarehouseService } from 'src/warehouse/warehouse.service';
     WoodConditionModule,
     DimensionModule,
     WoodArrivalModule,
-    WarehouseService,
+    WarehouseModule,
   ],
   exports: [WorkshopOutService],
 })

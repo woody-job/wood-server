@@ -75,7 +75,10 @@ export class WoodShipmentService {
     });
   }
 
-  async createWoodShipment(woodShipmentDto: CreateWoodShipmentDto) {
+  async createWoodShipment(
+    woodShipmentDto: CreateWoodShipmentDto,
+    params?: { avoidDirectWarehouseChange: boolean },
+  ) {
     const {
       date,
       amount,
@@ -84,6 +87,8 @@ export class WoodShipmentService {
       woodConditionId,
       dimensionId,
     } = woodShipmentDto;
+
+    const { avoidDirectWarehouseChange = false } = params ?? {};
 
     const dimension =
       await this.dimensionService.findDimensionById(dimensionId);
@@ -148,6 +153,18 @@ export class WoodShipmentService {
 
       await existentWoodShipment.save();
 
+      // Убрать доску со склада
+      if (!avoidDirectWarehouseChange) {
+        await this.updateWarehouseRecord({
+          amount,
+          woodClassId,
+          woodTypeId,
+          woodConditionId,
+          dimensionId,
+          action: 'subtract',
+        });
+      }
+
       return existentWoodShipment;
     }
 
@@ -169,14 +186,16 @@ export class WoodShipmentService {
     woodShipment.dimension = dimension;
 
     // Убрать доску со склада
-    await this.updateWarehouseRecord({
-      amount,
-      woodClassId,
-      woodTypeId,
-      woodConditionId,
-      dimensionId,
-      action: 'subtract',
-    });
+    if (!avoidDirectWarehouseChange) {
+      await this.updateWarehouseRecord({
+        amount,
+        woodClassId,
+        woodTypeId,
+        woodConditionId,
+        dimensionId,
+        action: 'subtract',
+      });
+    }
 
     return woodShipment;
   }
@@ -184,8 +203,10 @@ export class WoodShipmentService {
   async editWoodShipment(
     woodShipmentId: number,
     woodShipmentDto: UpdateWoodShipmentDto,
+    params?: { avoidDirectWarehouseChange: boolean },
   ) {
     const { amount, woodClassId, dimensionId } = woodShipmentDto;
+    const { avoidDirectWarehouseChange = false } = params ?? {};
 
     const woodShipment =
       await this.woodShipmentRepository.findByPk(woodShipmentId);
@@ -243,15 +264,17 @@ export class WoodShipmentService {
       action = 'subtract';
     }
 
-    // Изменить запись на складе (сырая доска)
-    await this.updateWarehouseRecord({
-      amount: newAmount,
-      woodConditionId: woodShipment.woodConditionId,
-      woodClassId: woodShipment.woodClassId,
-      woodTypeId: woodShipment.woodTypeId,
-      dimensionId: woodShipment.dimensionId,
-      action: action,
-    });
+    // Изменить запись на складе
+    if (!avoidDirectWarehouseChange) {
+      await this.updateWarehouseRecord({
+        amount: newAmount,
+        woodConditionId: woodShipment.woodConditionId,
+        woodClassId: woodShipment.woodClassId,
+        woodTypeId: woodShipment.woodTypeId,
+        dimensionId: woodShipment.dimensionId,
+        action: action,
+      });
+    }
 
     return woodShipment;
   }

@@ -280,22 +280,29 @@ export class DryerChamberDataService {
       });
 
     if (!existentWoodArrival) {
-      await this.woodArrivalService.createWoodArrival({
-        date: dryerChamberData.date,
-        woodConditionId: dryWoodCondition.id,
-        woodClassId: dryerChamberData.woodClassId,
-        woodTypeId: dryerChamberData.woodTypeId,
-        dimensionId: dryerChamberData.dimensionId,
-        amount: dryerChamberData.amount,
-      });
+      await this.woodArrivalService.createWoodArrival(
+        {
+          date: dryerChamberData.date,
+          woodConditionId: dryWoodCondition.id,
+          woodClassId: dryerChamberData.woodClassId,
+          woodTypeId: dryerChamberData.woodTypeId,
+          dimensionId: dryerChamberData.dimensionId,
+          amount: dryerChamberData.amount,
+        },
+        { avoidDirectWarehouseChange: true },
+      );
     } else {
-      await this.woodArrivalService.editWoodArrival(existentWoodArrival.id, {
-        // Если в текущий день уже есть поступления сырой доски с такими параметрами,
-        // то новая запись в поступлениях не создается, просто увеличивается его число
-        amount: existentWoodArrival.amount + dryerChamberData.amount,
-        woodClassId: dryerChamberData.woodClassId,
-        dimensionId: dryerChamberData.dimensionId,
-      });
+      await this.woodArrivalService.editWoodArrival(
+        existentWoodArrival.id,
+        {
+          // Если в текущий день уже есть поступления сырой доски с такими параметрами,
+          // то новая запись в поступлениях не создается, просто увеличивается его число
+          amount: existentWoodArrival.amount + dryerChamberData.amount,
+          woodClassId: dryerChamberData.woodClassId,
+          dimensionId: dryerChamberData.dimensionId,
+        },
+        { avoidDirectWarehouseChange: true },
+      );
     }
 
     return dryerChamberData;

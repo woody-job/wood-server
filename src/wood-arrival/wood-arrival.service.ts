@@ -35,6 +35,7 @@ export class WoodArrivalService {
     dimensionId,
     woodConditionId,
     action = 'add',
+    isCreate = false,
   }: {
     amount: number;
     woodClassId: number;
@@ -42,6 +43,7 @@ export class WoodArrivalService {
     dimensionId: number;
     woodConditionId: number;
     action?: 'add' | 'subtract';
+    isCreate?: boolean;
   }) {
     const existentWarehouseRecord =
       await this.warehouseService.findWarehouseRecordByWoodParams({
@@ -62,12 +64,24 @@ export class WoodArrivalService {
     } else {
       let newAmount = existentWarehouseRecord.amount;
 
-      if (action === 'add') {
-        newAmount = existentWarehouseRecord.amount + amount;
-      }
+      if (isCreate) {
+        if (existentWarehouseRecord.amount < amount) {
+          newAmount =
+            existentWarehouseRecord.amount +
+            (amount - existentWarehouseRecord.amount);
+        }
 
-      if (action === 'subtract') {
-        newAmount = existentWarehouseRecord.amount - amount;
+        if (amount > existentWarehouseRecord.amount) {
+          newAmount = amount;
+        }
+      } else {
+        if (action === 'add') {
+          newAmount = existentWarehouseRecord.amount + amount;
+        }
+
+        if (action === 'subtract') {
+          newAmount = existentWarehouseRecord.amount - amount;
+        }
       }
 
       await this.warehouseService.updateWarehouseRecord({
@@ -80,7 +94,10 @@ export class WoodArrivalService {
     }
   }
 
-  async createWoodArrival(woodArrivalDto: CreateWoodArrivalDto) {
+  async createWoodArrival(
+    woodArrivalDto: CreateWoodArrivalDto,
+    params?: { avoidDirectWarehouseChange: boolean },
+  ) {
     const {
       date,
       amount,
@@ -89,6 +106,8 @@ export class WoodArrivalService {
       woodConditionId,
       dimensionId,
     } = woodArrivalDto;
+
+    const { avoidDirectWarehouseChange = false } = params ?? {};
 
     const dimension =
       await this.dimensionService.findDimensionById(dimensionId);
@@ -141,6 +160,18 @@ export class WoodArrivalService {
 
       await existentWoodArrival.save();
 
+      // Внести доски на склад
+      if (!avoidDirectWarehouseChange) {
+        await this.updateWarehouseRecord({
+          amount: existentWoodArrival.amount,
+          woodClassId: existentWoodArrival.woodClassId,
+          woodTypeId: existentWoodArrival.woodTypeId,
+          dimensionId: existentWoodArrival.dimensionId,
+          woodConditionId: existentWoodArrival.woodConditionId,
+          isCreate: true,
+        });
+      }
+
       return existentWoodArrival;
     }
 
@@ -162,13 +193,16 @@ export class WoodArrivalService {
     woodArrival.dimension = dimension;
 
     // Внести доски на склад
-    await this.updateWarehouseRecord({
-      amount: woodArrival.amount,
-      woodClassId: woodArrival.woodClassId,
-      woodTypeId: woodArrival.woodTypeId,
-      dimensionId: woodArrival.dimensionId,
-      woodConditionId: woodArrival.woodConditionId,
-    });
+    if (!avoidDirectWarehouseChange) {
+      await this.updateWarehouseRecord({
+        amount: woodArrival.amount,
+        woodClassId: woodArrival.woodClassId,
+        woodTypeId: woodArrival.woodTypeId,
+        dimensionId: woodArrival.dimensionId,
+        woodConditionId: woodArrival.woodConditionId,
+        isCreate: true,
+      });
+    }
 
     return woodArrival;
   }
@@ -176,8 +210,10 @@ export class WoodArrivalService {
   async editWoodArrival(
     woodArrivalId: number,
     woodArrivalDto: UpdateWoodArrivalDto,
+    params?: { avoidDirectWarehouseChange: boolean },
   ) {
     const { amount, woodClassId, dimensionId } = woodArrivalDto;
+    const { avoidDirectWarehouseChange = false } = params ?? {};
 
     const woodArrival =
       await this.woodArrivalRepository.findByPk(woodArrivalId);
@@ -227,23 +263,25 @@ export class WoodArrivalService {
 
     if (oldWoodArrivalAmount > woodArrival.amount) {
       newAmount = oldWoodArrivalAmount - woodArrival.amount;
-      action = 'add';
+      action = 'subtract';
     }
 
     if (oldWoodArrivalAmount < woodArrival.amount) {
       newAmount = woodArrival.amount - oldWoodArrivalAmount;
-      action = 'subtract';
+      action = 'add';
     }
 
     // Изменить запись на складе
-    await this.updateWarehouseRecord({
-      amount: newAmount,
-      woodConditionId: woodArrival.woodConditionId,
-      woodClassId: woodArrival.woodClassId,
-      woodTypeId: woodArrival.woodTypeId,
-      dimensionId: woodArrival.dimensionId,
-      action: action,
-    });
+    if (!avoidDirectWarehouseChange) {
+      await this.updateWarehouseRecord({
+        amount: newAmount,
+        woodConditionId: woodArrival.woodConditionId,
+        woodClassId: woodArrival.woodClassId,
+        woodTypeId: woodArrival.woodTypeId,
+        dimensionId: woodArrival.dimensionId,
+        action: action,
+      });
+    }
 
     return woodArrival;
   }

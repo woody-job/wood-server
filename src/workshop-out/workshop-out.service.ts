@@ -39,12 +39,14 @@ export class WorkshopOutService {
     woodTypeId,
     dimensionId,
     action = 'add',
+    isCreate = false,
   }: {
     amount: number;
     woodClassId: number;
     woodTypeId: number;
     dimensionId: number;
     action?: 'add' | 'subtract';
+    isCreate?: boolean;
   }) {
     // Внести на склад сырую доску
     const wetWoodCondition =
@@ -76,12 +78,24 @@ export class WorkshopOutService {
     } else {
       let newAmount = existentWarehouseRecord.amount;
 
-      if (action === 'add') {
-        newAmount = existentWarehouseRecord.amount + amount;
-      }
+      if (isCreate) {
+        if (existentWarehouseRecord.amount < amount) {
+          newAmount =
+            existentWarehouseRecord.amount +
+            (amount - existentWarehouseRecord.amount);
+        }
 
-      if (action === 'subtract') {
-        newAmount = existentWarehouseRecord.amount - amount;
+        if (amount > existentWarehouseRecord.amount) {
+          newAmount = amount;
+        }
+      } else {
+        if (action === 'add') {
+          newAmount = existentWarehouseRecord.amount + amount;
+        }
+
+        if (action === 'subtract') {
+          newAmount = existentWarehouseRecord.amount - amount;
+        }
       }
 
       await this.warehouseService.updateWarehouseRecord({
@@ -124,6 +138,7 @@ export class WorkshopOutService {
       woodClassId,
       woodTypeId,
       dimensionId,
+      isCreate: true,
     });
 
     // Добавить запись в поступления (сырая доска)
@@ -137,22 +152,40 @@ export class WorkshopOutService {
       });
 
     if (!existentWoodArrival) {
-      await this.woodArrivalService.createWoodArrival({
-        date: date,
-        woodConditionId: wetWoodCondition.id,
-        woodClassId: woodClassId,
-        woodTypeId: woodTypeId,
-        dimensionId: dimensionId,
-        amount: amount,
-      });
+      await this.woodArrivalService.createWoodArrival(
+        {
+          date: date,
+          woodConditionId: wetWoodCondition.id,
+          woodClassId: woodClassId,
+          woodTypeId: woodTypeId,
+          dimensionId: dimensionId,
+          amount: amount,
+        },
+        { avoidDirectWarehouseChange: true },
+      );
     } else {
-      await this.woodArrivalService.editWoodArrival(existentWoodArrival.id, {
-        // Если в текущий день уже есть поступления сырой доски с такими параметрами,
-        // то новая запись в поступлениях не создается, просто увеличивается его число
-        amount: existentWoodArrival.amount + amount,
-        woodClassId: woodClassId,
-        dimensionId: dimensionId,
-      });
+      let newAmount = existentWoodArrival.amount;
+
+      if (existentWoodArrival.amount < amount) {
+        newAmount =
+          existentWoodArrival.amount + (amount - existentWoodArrival.amount);
+      }
+
+      if (amount > existentWoodArrival.amount) {
+        newAmount = amount;
+      }
+
+      await this.woodArrivalService.editWoodArrival(
+        existentWoodArrival.id,
+        {
+          // Если в текущий день уже есть поступления сырой доски с такими параметрами,
+          // то новая запись в поступлениях не создается, просто увеличивается его число
+          amount: newAmount,
+          woodClassId: woodClassId,
+          dimensionId: dimensionId,
+        },
+        { avoidDirectWarehouseChange: true },
+      );
     }
   }
 
@@ -378,14 +411,17 @@ export class WorkshopOutService {
       // Такого кейса в принципе быть не должно, но, все-таки, если по какой-то причине
       // выход из цеха, который мы редактируем, есть, а записи о поступлениях нет, то
       // создается новая запись в поступлениях
-      await this.woodArrivalService.createWoodArrival({
-        date: workshopOut.date,
-        woodConditionId: wetWoodCondition.id,
-        woodClassId: workshopOut.woodClassId,
-        woodTypeId: workshopOut.woodTypeId,
-        dimensionId: workshopOut.dimensionId,
-        amount: workshopOut.amount,
-      });
+      await this.woodArrivalService.createWoodArrival(
+        {
+          date: workshopOut.date,
+          woodConditionId: wetWoodCondition.id,
+          woodClassId: workshopOut.woodClassId,
+          woodTypeId: workshopOut.woodTypeId,
+          dimensionId: workshopOut.dimensionId,
+          amount: workshopOut.amount,
+        },
+        { avoidDirectWarehouseChange: true },
+      );
     } else {
       let newAmount = existentWoodArrival.amount;
 
@@ -411,13 +447,17 @@ export class WorkshopOutService {
           (workshopOut.amount - oldWorkshopOutAmount);
       }
 
-      await this.woodArrivalService.editWoodArrival(existentWoodArrival.id, {
-        // Если в текущий день уже есть поступления сырой доски с такими параметрами,
-        // то новая запись в поступлениях не создается, просто меняется его число
-        amount: newAmount,
-        woodClassId: workshopOut.woodClassId,
-        dimensionId: workshopOut.dimensionId,
-      });
+      await this.woodArrivalService.editWoodArrival(
+        existentWoodArrival.id,
+        {
+          // Если в текущий день уже есть поступления сырой доски с такими параметрами,
+          // то новая запись в поступлениях не создается, просто меняется его число
+          amount: newAmount,
+          woodClassId: workshopOut.woodClassId,
+          dimensionId: workshopOut.dimensionId,
+        },
+        { avoidDirectWarehouseChange: true },
+      );
     }
 
     let newAmount = oldWorkshopOutAmount;
