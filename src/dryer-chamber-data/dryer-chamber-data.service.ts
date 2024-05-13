@@ -336,4 +336,53 @@ export class DryerChamberDataService {
 
     await dryerChamberData.destroy();
   }
+
+  async getOverallDryersStats() {
+    const dryers = await this.dryerChamberService.getAllDryerChambers();
+    const woodClasses = await this.woodClassService.getAllWoodClasses();
+
+    const output = {};
+    let resultVolume = 0;
+
+    await Promise.all(
+      dryers.map(async (dryerChamber) => {
+        const woodByDryerChamber =
+          await this.dryerChamberDataRepository.findAll({
+            where: { dryerChamberId: dryerChamber.id, isDrying: true },
+            include: [
+              {
+                model: Dimension,
+                as: 'dimension',
+                attributes: ['volume'],
+              },
+            ],
+          });
+
+        const innerOutput = {};
+
+        woodClasses.forEach(async (woodClass) => {
+          const woodByWoodClassInDryerChamber = woodByDryerChamber.filter(
+            (warehouseRecord) => warehouseRecord.woodClassId === woodClass.id,
+          );
+
+          const totalVolume = woodByWoodClassInDryerChamber.reduce(
+            (total, warehouseRecord) =>
+              total + warehouseRecord.dimension.volume * warehouseRecord.amount,
+            0,
+          );
+
+          resultVolume += totalVolume;
+
+          innerOutput[woodClass.name] = Number(totalVolume.toFixed(4));
+        });
+
+        output[dryerChamber.name] = innerOutput;
+      }),
+    );
+
+    return {
+      data: output,
+      total: Number(resultVolume.toFixed(4)),
+    };
+  }
 }

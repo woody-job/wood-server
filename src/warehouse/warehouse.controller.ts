@@ -17,6 +17,14 @@ export class WarehouseController {
     );
   }
 
+  @ApiOperation({
+    summary: 'Получение свода по складу для статистики',
+  })
+  @Get('/get/stats')
+  getStats() {
+    return this.warehouseService.getOverralWarehouseStats();
+  }
+
   @ApiOperation({ summary: 'Удаление записи склада' })
   @Delete('/:warehouseRecordId')
   delete(@Param('warehouseRecordId') warehouseRecordId: string) {

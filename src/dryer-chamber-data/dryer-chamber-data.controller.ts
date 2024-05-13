@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { DryerChamberDataService } from './dryer-chamber-data.service';
 import { CreateDryerChamberDataDto } from './dtos/create-dryer-chamber-data.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -42,6 +34,14 @@ export class DryerChamberDataController {
   @Get('/all-records')
   getAll() {
     return this.dryerChamberDataService.getAllRecords();
+  }
+
+  @ApiOperation({
+    summary: 'Получение свода по сушилкам для статистики',
+  })
+  @Get('/get/stats')
+  getStats() {
+    return this.dryerChamberDataService.getOverallDryersStats();
   }
 
   @ApiOperation({

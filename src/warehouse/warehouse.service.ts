@@ -1,10 +1,4 @@
-import {
-  HttpException,
-  HttpStatus,
-  Inject,
-  Injectable,
-  forwardRef,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DimensionService } from 'src/dimension/dimension.service';
 import { WoodClassService } from 'src/wood-class/wood-class.service';
@@ -16,7 +10,6 @@ import { Dimension } from 'src/dimension/dimension.model';
 import { WoodClass } from 'src/wood-class/wood-class.model';
 import { WoodCondition } from 'src/wood-condition/wood-condition.model';
 import { WoodType } from 'src/wood-type/wood-type.model';
-import { WoodArrivalService } from 'src/wood-arrival/wood-arrival.service';
 
 @Injectable()
 export class WarehouseService {
@@ -27,8 +20,6 @@ export class WarehouseService {
     private woodTypeService: WoodTypeService,
     private dimensionService: DimensionService,
     private woodConditionService: WoodConditionService,
-    @Inject(forwardRef(() => WoodArrivalService))
-    private woodArrivalService: WoodArrivalService,
   ) {}
 
   async createWarehouseRecord(warehouseRecordDto: CreateWarehouseRecordDto) {
@@ -202,8 +193,6 @@ export class WarehouseService {
     return warehouseRecords;
   }
 
-  async getAllWoodInDryers() {}
-
   async deleteWarehouseRecord(warehouseRecordId: number) {
     const warehouseRecord =
       await this.warehouseRepository.findByPk(warehouseRecordId);
@@ -239,5 +228,56 @@ export class WarehouseService {
     });
 
     return warehouseRecord;
+  }
+
+  async getOverralWarehouseStats() {
+    const woodConditions =
+      await this.woodConditionService.getAllWoodConditions();
+    const woodClasses = await this.woodClassService.getAllWoodClasses();
+
+    const output = {};
+    let resultVolume = 0;
+
+    await Promise.all(
+      woodConditions.map(async (woodCondition) => {
+        const woodByWoodConditionInWarehouse =
+          await this.warehouseRepository.findAll({
+            where: { woodConditionId: woodCondition.id },
+            include: [
+              {
+                model: Dimension,
+                as: 'dimension',
+                attributes: ['volume'],
+              },
+            ],
+          });
+
+        const innerOutput = {};
+
+        woodClasses.forEach(async (woodClass) => {
+          const woodByWoodClassInWarehouse =
+            woodByWoodConditionInWarehouse.filter(
+              (warehouseRecord) => warehouseRecord.woodClassId === woodClass.id,
+            );
+
+          const totalVolume = woodByWoodClassInWarehouse.reduce(
+            (total, warehouseRecord) =>
+              total + warehouseRecord.dimension.volume * warehouseRecord.amount,
+            0,
+          );
+
+          resultVolume += totalVolume;
+
+          innerOutput[woodClass.name] = Number(totalVolume.toFixed(4));
+        });
+
+        output[woodCondition.name] = innerOutput;
+      }),
+    );
+
+    return {
+      data: output,
+      total: Number(resultVolume.toFixed(4)),
+    };
   }
 }
