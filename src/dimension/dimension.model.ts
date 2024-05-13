@@ -9,7 +9,10 @@ import {
   Table,
 } from 'sequelize-typescript';
 import { DryerChamberData } from 'src/dryer-chamber-data/dryer-chamber-data.model';
+import { Warehouse } from 'src/warehouse/warehouse.model';
+import { WoodArrival } from 'src/wood-arrival/wood-arrival.model';
 import { WoodClass } from 'src/wood-class/wood-class.model';
+import { WoodShipment } from 'src/wood-shipment/wood-shipment.model';
 import { WorkshopDailyData } from 'src/workshop-daily-data/workshop-daily-data.model';
 import { WorkshopOut } from 'src/workshop-out/workshop-out.model';
 import { WorkshopWoodPrice } from 'src/workshop-wood-prices/workshop-wood-price.model';
@@ -83,4 +86,13 @@ export class Dimension extends Model<Dimension, DimensionCreationAttrs> {
 
   @HasMany(() => WorkshopOut)
   workshopOuts: WorkshopOut[];
+
+  @HasMany(() => WoodArrival)
+  woodArrivals: WoodArrival[];
+
+  @HasMany(() => WoodShipment)
+  woodShipments: WoodShipment[];
+
+  @HasMany(() => Warehouse)
+  warehouseDatas: Warehouse[];
 }
