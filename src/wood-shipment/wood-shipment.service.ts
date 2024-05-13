@@ -126,24 +126,12 @@ export class WoodShipmentService {
       );
     }
 
-    const momentDate = moment(date);
-
-    const year = momentDate.year();
-    const month = momentDate.month() + 1;
-    const day = momentDate.date();
-
-    const existentWoodShipment = await this.woodShipmentRepository.findOne({
-      where: {
-        [Op.and]: Sequelize.where(
-          Sequelize.fn('date_trunc', 'day', Sequelize.col('date')),
-          Op.eq,
-          `${year}-${month}-${day}`,
-        ),
-        woodConditionId,
-        woodClassId,
-        woodTypeId,
-        dimensionId,
-      },
+    const existentWoodShipment = await this.findWoodShipmentRecordByWoodParams({
+      date,
+      woodConditionId,
+      woodClassId,
+      woodTypeId,
+      dimensionId,
     });
 
     // Если отгрузка в выбранный день с выбранными параметрами доски уже существует,
@@ -358,5 +346,41 @@ export class WoodShipmentService {
       dimensionId: woodShipment.dimensionId,
       action: 'add',
     });
+  }
+
+  async findWoodShipmentRecordByWoodParams({
+    date,
+    woodConditionId,
+    woodClassId,
+    woodTypeId,
+    dimensionId,
+  }: {
+    date: string;
+    woodConditionId: number;
+    woodClassId: number;
+    woodTypeId: number;
+    dimensionId: number;
+  }) {
+    const momentDate = moment(date);
+
+    const year = momentDate.year();
+    const month = momentDate.month() + 1;
+    const day = momentDate.date();
+
+    const existentWoodShipment = await this.woodShipmentRepository.findOne({
+      where: {
+        [Op.and]: Sequelize.where(
+          Sequelize.fn('date_trunc', 'day', Sequelize.col('date')),
+          Op.eq,
+          `${year}-${month}-${day}`,
+        ),
+        woodConditionId,
+        woodClassId,
+        woodTypeId,
+        dimensionId,
+      },
+    });
+
+    return existentWoodShipment;
   }
 }

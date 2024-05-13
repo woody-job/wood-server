@@ -11,17 +11,20 @@ import {
 import { WoodArrivalService } from './wood-arrival.service';
 import { CreateWoodArrivalDto } from './dtos/create-wood-arrival.dto';
 import { UpdateWoodArrivalDto } from './dtos/update-wood-arrival.dto';
-import { WoodCondition } from 'src/wood-condition/wood-condition.model';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Поступления доски')
 @Controller('wood-arrival')
 export class WoodArrivalController {
   constructor(private woodArrivalService: WoodArrivalService) {}
 
+  @ApiOperation({ summary: 'Добавление поступления доски' })
   @Post()
   create(@Body() woodArrivalDto: CreateWoodArrivalDto) {
     return this.woodArrivalService.createWoodArrival(woodArrivalDto);
   }
 
+  @ApiOperation({ summary: 'Редактирование поступления доски' })
   @Put('/:woodArrivalId')
   edit(
     @Param('woodArrivalId') woodArrivalId: string,
@@ -33,6 +36,10 @@ export class WoodArrivalController {
     );
   }
 
+  @ApiOperation({
+    summary:
+      'Получение поступленний по состоянию доски (сырая/сухая) с возможностью фильтрации по датам',
+  })
   @Get('/:woodConditionId')
   getAll(
     @Param('woodConditionId') woodConditionId: string,
@@ -46,6 +53,7 @@ export class WoodArrivalController {
     });
   }
 
+  @ApiOperation({ summary: 'Удаление поступления доски' })
   @Delete('/:woodArrivalId')
   delete(@Param('woodArrivalId') woodArrivalId: string) {
     return this.woodArrivalService.deleteWoodArrival(Number(woodArrivalId));

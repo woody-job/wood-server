@@ -14,6 +14,7 @@ import { WoodTypeModule } from 'src/wood-type/wood-type.module';
 import { WoodArrivalModule } from 'src/wood-arrival/wood-arrival.module';
 import { WoodConditionModule } from 'src/wood-condition/wood-condition.module';
 import { WarehouseModule } from 'src/warehouse/warehouse.module';
+import { WoodShipmentModule } from 'src/wood-shipment/wood-shipment.module';
 
 @Module({
   controllers: [DryerChamberDataController],
@@ -33,6 +34,7 @@ import { WarehouseModule } from 'src/warehouse/warehouse.module';
     WoodArrivalModule,
     WoodConditionModule,
     WarehouseModule,
+    WoodShipmentModule,
   ],
 })
 export class DryerChamberDataModule {}

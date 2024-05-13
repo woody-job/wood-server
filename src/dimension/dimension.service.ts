@@ -58,7 +58,7 @@ export class DimensionService {
       width,
       thickness,
       length,
-      volume: (width / 1000) * (thickness / 1000) * length,
+      volume: Number(((width / 1000) * (thickness / 1000) * length).toFixed(4)),
     });
 
     await dimension.$set('woodClass', woodClassId);

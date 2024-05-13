@@ -4,7 +4,7 @@ import { IsNotEmpty, IsNumber, IsString, Length } from 'class-validator';
 export class CreateUserDto {
   @ApiProperty({ example: 'zubabuba11', description: 'Логин пользователя' })
   @IsString({ message: 'Должен быть строкой' })
-  @Length(4, 16, { message: 'Не меньше 4 и не больше 16 символов' })
+  @Length(4, 25, { message: 'Не меньше 4 и не больше 25 символов' })
   readonly login: string;
 
   @ApiProperty({

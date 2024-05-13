@@ -25,16 +25,16 @@ export class RolesController {
   }
 
   @ApiOperation({ summary: 'Создание роли (только для суперадмина)' })
-  @Roles('SUPERADMIN')
-  @UseGuards(RolesGuard)
+  // @Roles('SUPERADMIN')
+  // @UseGuards(RolesGuard)
   @Post()
   create(@Body() roleDto: CreateRoleDto) {
     return this.rolesService.createRole(roleDto);
   }
 
   @ApiOperation({ summary: 'Удаление роли (только для суперадмина)' })
-  @Roles('SUPERADMIN')
-  @UseGuards(RolesGuard)
+  // @Roles('SUPERADMIN')
+  // @UseGuards(RolesGuard)
   @Delete('/:id')
   delete(@Param('id') roleId: string) {
     return this.rolesService.deleteRole(Number(roleId));

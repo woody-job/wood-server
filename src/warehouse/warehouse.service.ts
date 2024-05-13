@@ -7,12 +7,11 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DimensionService } from 'src/dimension/dimension.service';
-import { DryerChamberService } from 'src/dryer-chamber/dryer-chamber.service';
 import { WoodClassService } from 'src/wood-class/wood-class.service';
 import { WoodConditionService } from 'src/wood-condition/wood-condition.service';
 import { WoodTypeService } from 'src/wood-type/wood-type.service';
 import { Warehouse } from './warehouse.model';
-import { CreateWarehouseRecordDto } from './create-warehouse-record.dto';
+import { CreateWarehouseRecordDto } from './dtos/create-warehouse-record.dto';
 import { Dimension } from 'src/dimension/dimension.model';
 import { WoodClass } from 'src/wood-class/wood-class.model';
 import { WoodCondition } from 'src/wood-condition/wood-condition.model';

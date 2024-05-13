@@ -20,7 +20,7 @@ interface WarehouseCreationAttrs {
   woodConditionId: number;
 }
 
-@Table({ tableName: 'wood_shipment', timestamps: false })
+@Table({ tableName: 'warehouse', timestamps: false })
 export class Warehouse extends Model<Warehouse, WarehouseCreationAttrs> {
   @ApiProperty({ example: '1', description: 'Уникальный идентификатор' })
   @Column({

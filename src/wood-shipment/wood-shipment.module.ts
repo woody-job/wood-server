@@ -30,5 +30,6 @@ import { WarehouseModule } from 'src/warehouse/warehouse.module';
     WoodConditionModule,
     WarehouseModule,
   ],
+  exports: [WoodShipmentService],
 })
 export class WoodShipmentModule {}
