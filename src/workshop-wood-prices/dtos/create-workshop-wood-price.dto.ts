@@ -15,9 +15,4 @@ export class CreateWorkshopWoodPriceDto {
   @IsNotEmpty({ message: 'Не должно быть пустым' })
   @IsNumber({}, { message: 'Сечение выбрано некорректно' })
   readonly dimensionId: number;
-
-  @ApiProperty({ example: '122', description: 'id сорта' })
-  @IsNotEmpty({ message: 'Не должен быть пустой' })
-  @IsNumber({}, { message: 'Сорт выбран некорректно' })
-  readonly woodClassId: number;
 }
