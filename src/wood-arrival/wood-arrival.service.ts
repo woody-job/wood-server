@@ -402,4 +402,110 @@ export class WoodArrivalService {
 
     return woodArrival;
   }
+
+  async getWoodArrivalStatsByWoodCondition({
+    woodConditionId,
+    startDate,
+    endDate,
+  }: {
+    woodConditionId: number;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    const woodClasses = await this.woodClassService.getAllWoodClasses();
+    const woodArrivals = await this.getAllWoodArrivalsByWoodCondition({
+      woodConditionId,
+      startDate,
+      endDate,
+    });
+
+    const tableData = []; // dimension, woodClass, amount
+    const sunburstData = [];
+    let totalVolume = 0;
+
+    if (!woodArrivals || !woodArrivals.length) {
+      return {
+        tableData: [],
+        sunburstData: [],
+        totalVolume: 0,
+      };
+    }
+
+    woodArrivals.forEach((woodArrival) => {
+      const dimensionString = `${woodArrival.dimension.width}x${woodArrival.dimension.thickness}x${woodArrival.dimension.length}`;
+      const woodClassName = woodArrival.woodClass.name;
+
+      // Вычислять данные для таблицы только в том случае, когда поиск происходит в рамках одного дня
+      if (startDate === endDate) {
+        const tableRow = {
+          dimension: dimensionString,
+          woodClass: woodClassName,
+          amount: woodArrival.amount,
+        };
+
+        const tableDataWithSameParams = tableData.find(
+          (tableRow) =>
+            tableRow.dimension === dimensionString &&
+            tableRow.woodClass === woodArrival.woodClass.name,
+        );
+
+        if (tableDataWithSameParams) {
+          tableDataWithSameParams.amount += woodArrival.amount;
+        } else {
+          tableData.push(tableRow);
+        }
+      }
+
+      totalVolume += woodArrival.dimension.volume * woodArrival.amount;
+    });
+
+    woodClasses.forEach((woodClass) => {
+      const woodArrivalsByWoodClass = woodArrivals.filter(
+        (woodArrival) => woodArrival.woodClass.id === woodClass.id,
+      );
+
+      const woodClassName = woodClass.name;
+
+      const sunburstItem = {
+        name: woodClassName,
+        children: [],
+      };
+
+      woodArrivalsByWoodClass.forEach((woodArrival) => {
+        const dimensionString = `${woodArrival.dimension.width}x${woodArrival.dimension.thickness}x${woodArrival.dimension.length}`;
+        const volume = Number(
+          (woodArrival.dimension.volume * woodArrival.amount).toFixed(4),
+        );
+
+        const sunburstDataWithSameParams = sunburstItem.children.find(
+          (item) => item.name === dimensionString,
+        );
+
+        if (sunburstDataWithSameParams) {
+          sunburstDataWithSameParams.size =
+            sunburstDataWithSameParams.size + volume;
+
+          sunburstDataWithSameParams.size = Number(
+            sunburstDataWithSameParams.size.toFixed(4),
+          );
+        } else {
+          const dataByDimensions = {
+            name: dimensionString,
+            size: volume,
+          };
+
+          sunburstItem.children.push(dataByDimensions);
+        }
+      });
+
+      sunburstData.push(sunburstItem);
+    });
+
+    return {
+      // Вычислять данные для таблицы только в том случае, когда поиск происходит в рамках одного дня
+      ...(startDate === endDate ? { tableData } : {}),
+      sunburstData,
+      totalVolume: Number(totalVolume.toFixed(4)),
+    };
+  }
 }

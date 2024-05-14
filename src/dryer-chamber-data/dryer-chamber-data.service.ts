@@ -413,7 +413,7 @@ export class DryerChamberDataService {
 
     return {
       data: dryerChamberData
-        ? [{ name: dimensionString, volume: dimensionVolume }]
+        ? [{ name: dimensionString, size: dimensionVolume }]
         : [],
       total: dimensionVolume,
     };

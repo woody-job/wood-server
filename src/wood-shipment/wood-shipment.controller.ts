@@ -53,6 +53,23 @@ export class WoodShipmentController {
     });
   }
 
+  @ApiOperation({
+    summary: `Получение отгрузок по состоянию доски (сырая/сухая) для страницы 
+      отгрузок с возможностью фильтрации по датам`,
+  })
+  @Get('/get/stats/:woodConditionId')
+  getShipmentStats(
+    @Param('woodConditionId') woodConditionId: string,
+    @Query('startDate') startDate: string | undefined,
+    @Query('endDate') endDate: string | undefined,
+  ) {
+    return this.woodShipmentService.getWoodShipmentStatsByWoodCondition({
+      woodConditionId: Number(woodConditionId),
+      startDate,
+      endDate,
+    });
+  }
+
   @ApiOperation({ summary: 'Удаление отгрузки доски' })
   @Delete('/:woodShipmentId')
   delete(@Param('woodShipmentId') woodShipmentId: string) {
