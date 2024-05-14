@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { WorkshopWoodPricesService } from './workshop-wood-prices.service';
 import { CreateWorkshopWoodPriceDto } from './dtos/create-workshop-wood-price.dto';
 import { UpdateWorkshopWoodPriceDto } from './dtos/update-workshop-wood-price.dto';
@@ -46,6 +55,13 @@ export class WorkshopWoodPricesController {
     return this.workshopWoodPricesService.getAllWorkshopWoodPricesByWorkshopId(
       Number(workshopId),
       woodClassId ? Number(woodClassId) : undefined,
+    );
+  }
+
+  @Delete('/:workshopWoodPriceId')
+  delete(@Param('workshopWoodPriceId') workshopWoodPriceId: string) {
+    return this.workshopWoodPricesService.deleteWorkshopWoodPrice(
+      Number(workshopWoodPriceId),
     );
   }
 }

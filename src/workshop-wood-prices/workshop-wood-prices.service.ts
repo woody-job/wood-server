@@ -22,15 +22,13 @@ export class WorkshopWoodPricesService {
   async createWorkshopWoodPrice(
     workshopWoodPriceDto: CreateWorkshopWoodPriceDto,
   ) {
-    const { price, workshopId, dimensionId, woodClassId } =
-      workshopWoodPriceDto;
+    const { price, workshopId, dimensionId } = workshopWoodPriceDto;
 
     const existentWorkshopWoodPrice =
       await this.workshopWoodPriceRepository.findOne({
         where: {
           workshopId,
           dimensionId,
-          woodClassId,
         },
       });
 
@@ -47,13 +45,6 @@ export class WorkshopWoodPricesService {
       throw new HttpException('Выбранный цех не найден', HttpStatus.NOT_FOUND);
     }
 
-    const woodClass =
-      await this.woodClassService.findWoodClassById(woodClassId);
-
-    if (!woodClass) {
-      throw new HttpException('Выбранный сорт не найден', HttpStatus.NOT_FOUND);
-    }
-
     const dimension =
       await this.dimensionService.findDimensionById(dimensionId);
 
@@ -64,13 +55,21 @@ export class WorkshopWoodPricesService {
       );
     }
 
+    const woodClass = await this.woodClassService.findWoodClassById(
+      dimension.woodClassId,
+    );
+
+    if (!woodClass) {
+      throw new HttpException('Выбранный сорт не найден', HttpStatus.NOT_FOUND);
+    }
+
     const workshopWoodPrice = await this.workshopWoodPriceRepository.create({
       price,
     });
 
     await workshopWoodPrice.$set('workshop', workshopId);
     await workshopWoodPrice.$set('dimension', dimensionId);
-    await workshopWoodPrice.$set('woodClass', woodClassId);
+    await workshopWoodPrice.$set('woodClass', dimension.woodClassId); // TODO: Нужно глобально избавиться от пары woodClassId | dimensionId. WoodClass есть внутри Dimension.
 
     workshopWoodPrice.workshop = workshop;
     workshopWoodPrice.dimension = dimension;
@@ -160,5 +159,19 @@ export class WorkshopWoodPricesService {
     });
 
     return workshopWoodPrice;
+  }
+
+  async deleteWorkshopWoodPrice(workshopWoodPriceId: number) {
+    const workshopWoodPrice =
+      await this.workshopWoodPriceRepository.findByPk(workshopWoodPriceId);
+
+    if (!workshopWoodPrice) {
+      throw new HttpException(
+        'Выбранная цена доски в цехе не найдена',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    await workshopWoodPrice.destroy();
   }
 }

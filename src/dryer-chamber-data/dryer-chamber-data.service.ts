@@ -165,7 +165,7 @@ export class DryerChamberDataService {
     await dryerChamberData.$set('woodType', woodTypeId);
     dryerChamberData.woodType = woodType;
 
-    await dryerChamberData.$set('dimension', woodClassId);
+    await dryerChamberData.$set('dimension', dimensionId);
     dryerChamberData.dimension = dimension;
 
     await dryerChamberData.$set('dryerChamber', dryerChamberId);

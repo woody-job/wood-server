@@ -40,6 +40,7 @@ export class WorkshopOutService {
     dimensionId,
     action = 'add',
     isCreate = false,
+    isUpdate = false,
   }: {
     amount: number;
     woodClassId: number;
@@ -47,6 +48,7 @@ export class WorkshopOutService {
     dimensionId: number;
     action?: 'add' | 'subtract';
     isCreate?: boolean;
+    isUpdate?: boolean;
   }) {
     // Внести на склад сырую доску
     const wetWoodCondition =
@@ -57,6 +59,18 @@ export class WorkshopOutService {
         "Состояния доски 'Сырая' нет в базе",
         HttpStatus.NOT_FOUND,
       );
+    }
+
+    if (!isUpdate) {
+      await this.warehouseService.createWarehouseRecord({
+        amount: amount,
+        woodConditionId: wetWoodCondition.id,
+        woodClassId: woodClassId,
+        woodTypeId: woodTypeId,
+        dimensionId: dimensionId,
+      });
+
+      return;
     }
 
     const existentWarehouseRecord =
@@ -175,14 +189,14 @@ export class WorkshopOutService {
         newAmount = amount;
       }
 
-      await this.woodArrivalService.editWoodArrival(
-        existentWoodArrival.id,
+      await this.woodArrivalService.createWoodArrival(
         {
-          // Если в текущий день уже есть поступления сырой доски с такими параметрами,
-          // то новая запись в поступлениях не создается, просто увеличивается его число
-          amount: newAmount,
+          date: date,
+          woodConditionId: wetWoodCondition.id,
           woodClassId: woodClassId,
+          woodTypeId: woodTypeId,
           dimensionId: dimensionId,
+          amount: amount,
         },
         { avoidDirectWarehouseChange: true },
       );
@@ -221,7 +235,7 @@ export class WorkshopOutService {
 
       await this.updateWoodArrivalForCreate({
         date: existentWorkshopOut.date,
-        amount: existentWorkshopOut.amount,
+        amount: amount,
         woodClassId: existentWorkshopOut.woodClassId,
         woodTypeId: existentWorkshopOut.woodTypeId,
         dimensionId: existentWorkshopOut.dimensionId,
@@ -479,6 +493,7 @@ export class WorkshopOutService {
       woodTypeId: workshopOut.woodTypeId,
       dimensionId: workshopOut.dimensionId,
       action: action,
+      isUpdate: true,
     });
 
     return workshopOut;
@@ -627,18 +642,14 @@ export class WorkshopOutService {
 
     const weekStart = currentDate.clone().startOf('isoWeek');
 
-    const days: string[] = Array.from(Array(7).keys()).map((dayNumber) => {
+    const days: string[] = Array.from(Array(6).keys()).map((dayNumber) => {
       return moment(weekStart).add(dayNumber, 'days').toISOString();
     });
-
-    days.shift();
 
     const workshops = await this.workshopService.getAllWorkshops();
     const woodClasses = await this.woodClassService.getAllWoodClasses();
 
     const output = {};
-
-    console.log(days);
 
     await Promise.all(
       workshops.map(async (workshop) => {
