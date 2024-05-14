@@ -53,6 +53,14 @@ export class WorkshopOutController {
     });
   }
 
+  @ApiOperation({
+    summary: 'Получение свода по цехам для статистики',
+  })
+  @Get('/get/stats')
+  getStats() {
+    return this.workshopOutService.getOverallWorkshopsStats();
+  }
+
   @ApiOperation({ summary: 'Удаление выхода доски из цеха' })
   @Delete('/:workshopOutId')
   delete(@Param('workshopOutId') workshopOutId: string) {

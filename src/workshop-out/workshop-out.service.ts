@@ -621,4 +621,88 @@ export class WorkshopOutService {
 
     return workshopOut;
   }
+
+  async getOverallWorkshopsStats() {
+    const currentDate = moment();
+
+    const weekStart = currentDate.clone().startOf('isoWeek');
+
+    const days: string[] = Array.from(Array(7).keys()).map((dayNumber) => {
+      return moment(weekStart).add(dayNumber, 'days').toISOString();
+    });
+
+    days.shift();
+
+    const workshops = await this.workshopService.getAllWorkshops();
+    const woodClasses = await this.woodClassService.getAllWoodClasses();
+
+    const output = {};
+
+    console.log(days);
+
+    await Promise.all(
+      workshops.map(async (workshop) => {
+        const workshopOutput = [];
+
+        await Promise.all(
+          days.map(async (dayDate) => {
+            const workshopData = await this.getAllWoodOutForWorkshop({
+              workshopId: workshop.id,
+              startDate: dayDate,
+              endDate: dayDate,
+            });
+
+            const dayOutput = {
+              date: dayDate,
+              woods: [],
+            };
+
+            woodClasses.forEach((woodClass) => {
+              const workshopDataByWoodClass = workshopData.filter(
+                (workshopDataItem) =>
+                  workshopDataItem.woodClassId !== woodClass.id,
+              );
+
+              const totalVolume = workshopDataByWoodClass.reduce(
+                (total, workshopRecord) =>
+                  total +
+                  workshopRecord.dimension.volume * workshopRecord.amount,
+                0,
+              );
+
+              const currentWoodClassVolume = workshopDataByWoodClass.reduce(
+                (total, workshopRecord) => {
+                  if (workshopRecord.woodClass.id === woodClass.id) {
+                    return (
+                      total +
+                      workshopRecord.dimension.volume * workshopRecord.amount
+                    );
+                  }
+
+                  return total;
+                },
+                0,
+              );
+
+              const percentageForCurrentWoodClassFromTotalVolume =
+                (currentWoodClassVolume / totalVolume) * 100;
+
+              dayOutput.woods.push({
+                name: woodClass.name,
+                percentage: Number(
+                  percentageForCurrentWoodClassFromTotalVolume.toFixed(2),
+                ),
+              });
+            });
+
+            workshopOutput.push(dayOutput);
+          }),
+        );
+
+        output[workshop.name] = workshopOutput;
+      }),
+    );
+
+    return output;
+  }
 }
