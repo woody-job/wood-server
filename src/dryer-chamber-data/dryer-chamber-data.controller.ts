@@ -45,6 +45,14 @@ export class DryerChamberDataController {
   }
 
   @ApiOperation({
+    summary: 'Получение данных по сушилке для ее санберста',
+  })
+  @Get('/get/chamber-data/:dryerChamberId')
+  getChamberData(@Param('dryerChamberId') dryerChamberId: string) {
+    return this.dryerChamberDataService.getChamberData(Number(dryerChamberId));
+  }
+
+  @ApiOperation({
     summary: 'Занесение доски в сушилку',
   })
   @Post('/bring-in/:dryerChamberId')

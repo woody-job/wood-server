@@ -385,4 +385,37 @@ export class DryerChamberDataService {
       total: Number(resultVolume.toFixed(4)),
     };
   }
+
+  async getChamberData(dryerChamberId: number) {
+    const dryerChamber =
+      await this.dryerChamberService.findDryerChamberById(dryerChamberId);
+
+    if (!dryerChamber) {
+      throw new HttpException(
+        'Выбранная сушильная камера не найдена',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const dryerChamberData =
+      await this.getDryingWoodByDryerChamberId(dryerChamberId);
+
+    const dimensionString = dryerChamberData
+      ? `${dryerChamberData.dimension.width}x${dryerChamberData.dimension.thickness}x${dryerChamberData.dimension.length}`
+      : '';
+    const dimensionVolume = dryerChamberData
+      ? Number(
+          (dryerChamberData.dimension.volume * dryerChamberData.amount).toFixed(
+            4,
+          ),
+        )
+      : 0;
+
+    return {
+      data: dryerChamberData
+        ? [{ name: dimensionString, volume: dimensionVolume }]
+        : [],
+      total: dimensionVolume,
+    };
+  }
 }
