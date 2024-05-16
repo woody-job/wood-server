@@ -160,7 +160,16 @@ export class BeamInService {
       order: [['date', 'DESC']],
     });
 
-    return beamIns;
+    let totalVolume = 0;
+
+    beamIns.forEach((beamIn) => {
+      totalVolume += beamIn.beamSize.volume * beamIn.amount;
+    });
+
+    return {
+      data: beamIns,
+      totalVolume: Number(totalVolume.toFixed(2)),
+    };
   }
 
   async deleteBeamInFromWorkshop(beamInId: number) {

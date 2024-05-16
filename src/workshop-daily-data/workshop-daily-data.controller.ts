@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { WorkshopDailyDataService } from './workshop-daily-data.service';
 import { CreateWorkshopDailyDataDto } from './dtos/create-workshop-daily-data.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -24,6 +32,20 @@ export class WorkshopDailyDataController {
   @Get('/list')
   getAll() {
     return this.workshopDailyDataService.getAllWorkshopDailyData();
+  }
+
+  @ApiOperation({
+    summary: 'Получение свода ежедневных данных для цеха',
+  })
+  @Get('/get/daily-stats/:workshopId')
+  getDailyStats(
+    @Param('workshopId') workshopId: string,
+    @Query('date') date: string,
+  ) {
+    return this.workshopDailyDataService.getDailyStatsForWorkshop(
+      Number(workshopId),
+      date,
+    );
   }
 
   @ApiOperation({ summary: 'Удаление ежедневных данных' })

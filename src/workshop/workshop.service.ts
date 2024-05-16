@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Workshop } from './workshop.model';
 import { CreateWorkshopDto } from './dtos/create-workshop.dto';
+import { WorkshopWoodPrice } from 'src/workshop-wood-prices/workshop-wood-price.model';
 
 @Injectable()
 export class WorkshopService {
@@ -59,7 +60,9 @@ export class WorkshopService {
   }
 
   async findWorkshopById(workshopId: number) {
-    const workshop = await this.workshopRepository.findByPk(workshopId);
+    const workshop = await this.workshopRepository.findByPk(workshopId, {
+      include: [WorkshopWoodPrice],
+    });
 
     return workshop;
   }

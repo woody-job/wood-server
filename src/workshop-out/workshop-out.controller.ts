@@ -46,6 +46,7 @@ export class WorkshopOutController {
     @Query('startDate') startDate: string | undefined,
     @Query('endDate') endDate: string | undefined,
   ) {
+    // TODO: Это для одного дня! Для нескольких дней необходимо сделать разные запросы + сделать также в других местах
     return this.workshopOutService.getAllWoodOutForWorkshop({
       workshopId: Number(workshopId),
       startDate,

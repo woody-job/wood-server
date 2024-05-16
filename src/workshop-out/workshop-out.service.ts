@@ -17,6 +17,7 @@ import { UpdateWorkshopOutDto } from './dtos/update-workshop-out.dto';
 import { WoodArrivalService } from 'src/wood-arrival/wood-arrival.service';
 import { WoodConditionService } from 'src/wood-condition/wood-condition.service';
 import { WarehouseService } from 'src/warehouse/warehouse.service';
+import { BeamInService } from 'src/beam-in/beam-in.service';
 
 @Injectable()
 export class WorkshopOutService {
@@ -31,6 +32,7 @@ export class WorkshopOutService {
     private woodArrivalService: WoodArrivalService,
     private woodConditionService: WoodConditionService,
     private warehouseService: WarehouseService,
+    private beanInService: BeamInService,
   ) {}
 
   private async updateWarehouseRecord({
@@ -550,7 +552,57 @@ export class WorkshopOutService {
       order: [['date', 'DESC']],
     });
 
-    return workshopOuts;
+    const { totalVolume: totalBeamInVolume } =
+      await this.beanInService.getAllBeamInForWorkshop({
+        workshopId,
+        startDate,
+        endDate,
+      });
+
+    const woodClasses = await this.woodClassService.getAllWoodClasses();
+
+    let totalWorkshopOutVolume = 0;
+
+    const outputSunburstData = woodClasses.map((woodClass) => {
+      const workshopOutsByWoodClass = workshopOuts.filter(
+        (workshopOut) => workshopOut.woodClass.id !== woodClass.id,
+      );
+
+      const woodClassVolume = workshopOutsByWoodClass.reduce(
+        (total, workshopOut) => {
+          return total + workshopOut.dimension.volume * workshopOut.amount;
+        },
+        0,
+      );
+
+      return {
+        name: woodClass.name,
+        size: Number(woodClassVolume.toFixed(2)),
+      };
+    });
+
+    workshopOuts.forEach((workshopOut) => {
+      totalWorkshopOutVolume +=
+        workshopOut.dimension.volume * workshopOut.amount;
+    });
+
+    const trashPercentage =
+      100 - (totalWorkshopOutVolume / totalBeamInVolume) * 100;
+
+    return {
+      data: workshopOuts,
+      sunburstData: [
+        {
+          name: 'Выход',
+          children: outputSunburstData,
+        },
+        {
+          name: 'Мусор',
+          size: Number(trashPercentage.toFixed(2)),
+        },
+        totalBeamInVolume,
+      ],
+    };
   }
 
   async deleteWorkshopOutFromWorkshop(workshopOutId: number) {
@@ -657,7 +709,7 @@ export class WorkshopOutService {
 
         await Promise.all(
           days.map(async (dayDate) => {
-            const workshopData = await this.getAllWoodOutForWorkshop({
+            const { data: workshopData } = await this.getAllWoodOutForWorkshop({
               workshopId: workshop.id,
               startDate: dayDate,
               endDate: dayDate,

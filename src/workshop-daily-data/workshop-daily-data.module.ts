@@ -8,6 +8,7 @@ import { Workshop } from 'src/workshop/workshop.model';
 import { WoodNamingModule } from 'src/wood-naming/wood-naming.module';
 import { WorkshopModule } from 'src/workshop/workshop.module';
 import { DimensionModule } from 'src/dimension/dimension.module';
+import { WorkshopOutModule } from 'src/workshop-out/workshop-out.module';
 
 @Module({
   providers: [WorkshopDailyDataService],
@@ -17,6 +18,7 @@ import { DimensionModule } from 'src/dimension/dimension.module';
     WoodNamingModule,
     WorkshopModule,
     DimensionModule,
+    WorkshopOutModule,
   ],
 })
 export class WorkshopDailyDataModule {}
