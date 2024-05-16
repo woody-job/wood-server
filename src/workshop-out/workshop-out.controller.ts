@@ -40,17 +40,14 @@ export class WorkshopOutController {
     summary:
       'Получение списка выхода из цеха с возможностью фильтрации по дате',
   })
-  @Get('/list/:workshopId')
-  getAll(
+  @Get('/day-data/:workshopId')
+  getAllForADay(
     @Param('workshopId') workshopId: string,
-    @Query('startDate') startDate: string | undefined,
-    @Query('endDate') endDate: string | undefined,
+    @Query('date') date: string,
   ) {
-    // TODO: Это для одного дня! Для нескольких дней необходимо сделать разные запросы + сделать также в других местах
-    return this.workshopOutService.getAllWoodOutForWorkshop({
+    return this.workshopOutService.getAllWoodOutForWorkshopForADay({
       workshopId: Number(workshopId),
-      startDate,
-      endDate,
+      date,
     });
   }
 
@@ -60,6 +57,46 @@ export class WorkshopOutController {
   @Get('/get/stats')
   getStats() {
     return this.workshopOutService.getOverallWorkshopsStats();
+  }
+
+  @ApiOperation({
+    summary: 'Получение выхода для цеха как для чартов на странице статистики',
+  })
+  @Get('/get/workshop-stats/:workshopId')
+  getStatsForWorkshop(
+    @Param('workshopId') workshopId: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    return this.workshopOutService.getWorkshopsStatsByTimespan({
+      workshopId: Number(workshopId),
+      startDate,
+      endDate,
+    });
+  }
+
+  @ApiOperation({
+    summary: 'Получение итоговой прибыли для цеха за выбранные дни',
+  })
+  @Get('/get/workshop-stats/profit/:workshopId')
+  getProfitStats(
+    @Param('workshopId') workshopId: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('perUnit') perUnit: string,
+  ) {
+    let isPerUnitSearch = false;
+
+    if (perUnit === 'true') {
+      isPerUnitSearch = true;
+    }
+
+    return this.workshopOutService.getProfitStatsByTimespan({
+      workshopId: Number(workshopId),
+      startDate,
+      endDate,
+      isPerUnitSearch,
+    });
   }
 
   @ApiOperation({

@@ -172,6 +172,49 @@ export class BeamInService {
     };
   }
 
+  async getWorkshopsStatsByTimespan({
+    workshopId,
+    startDate,
+    endDate,
+  }: {
+    workshopId: number;
+    startDate: string;
+    endDate: string;
+  }) {
+    const workshop = await this.workshopService.findWorkshopById(workshopId);
+
+    if (!workshop) {
+      throw new HttpException('Выбранный цех не найден', HttpStatus.NOT_FOUND);
+    }
+
+    // TODO: Для всех query параметров с датой нужна валидация
+    if (!startDate || !endDate) {
+      throw new HttpException(
+        'Необходимо указать query параметры startDate & endDate',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const { data: beamIns } = await this.getAllBeamInForWorkshop({
+      workshopId,
+      startDate,
+      endDate,
+    });
+
+    const output = beamIns.map((beamIn) => {
+      const volume = Number(
+        (beamIn.beamSize.volume * beamIn.amount).toFixed(2),
+      );
+
+      return {
+        x: beamIn.date,
+        y: volume,
+      };
+    });
+
+    return output;
+  }
+
   async deleteBeamInFromWorkshop(beamInId: number) {
     const beamIn = await this.beamInRepository.findByPk(beamInId);
 

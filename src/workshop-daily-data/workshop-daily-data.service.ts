@@ -148,10 +148,9 @@ export class WorkshopDailyDataService {
     });
 
     const { data: workshopOutsForDate } =
-      await this.workshopOutService.getAllWoodOutForWorkshop({
+      await this.workshopOutService.getAllWoodOutForWorkshopForADay({
         workshopId,
-        startDate: date,
-        endDate: date,
+        date,
       });
 
     const workshopWoodPrices = workshop.workshopWoodPrices;
