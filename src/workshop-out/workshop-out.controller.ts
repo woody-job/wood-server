@@ -61,6 +61,17 @@ export class WorkshopOutController {
     return this.workshopOutService.getOverallWorkshopsStats();
   }
 
+  @ApiOperation({
+    summary: 'Получение свода о произведенной доске в цехах',
+  })
+  @Get('/get/produced-stats')
+  getProducedWoodStats(
+    @Query('startDate') startDate: string | undefined,
+    @Query('endDate') endDate: string | undefined,
+  ) {
+    return this.workshopOutService.getProducedWoodStats({ startDate, endDate });
+  }
+
   @ApiOperation({ summary: 'Удаление выхода доски из цеха' })
   @Delete('/:workshopOutId')
   delete(@Param('workshopOutId') workshopOutId: string) {
