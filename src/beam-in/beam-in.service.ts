@@ -195,6 +195,22 @@ export class BeamInService {
       );
     }
 
+    const momentStartDate = moment(startDate);
+    const now = momentStartDate.clone();
+    const days = [];
+
+    while (now.isSameOrBefore(endDate)) {
+      days.push(now.toISOString());
+      now.add(1, 'days');
+    }
+
+    if (days.length > 31) {
+      throw new HttpException(
+        'Количество запрашиваемых дней ограничено до 31',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const { data: beamIns } = await this.getAllBeamInForWorkshop({
       workshopId,
       startDate,

@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { WorkshopOut } from './workshop-out.model';
 import { WorkshopWoodPricesService } from 'src/workshop-wood-prices/workshop-wood-prices.service';
@@ -18,6 +24,7 @@ import { WoodArrivalService } from 'src/wood-arrival/wood-arrival.service';
 import { WoodConditionService } from 'src/wood-condition/wood-condition.service';
 import { WarehouseService } from 'src/warehouse/warehouse.service';
 import { BeamInService } from 'src/beam-in/beam-in.service';
+import { WorkshopDailyDataService } from 'src/workshop-daily-data/workshop-daily-data.service';
 
 @Injectable()
 export class WorkshopOutService {
@@ -33,6 +40,8 @@ export class WorkshopOutService {
     private woodConditionService: WoodConditionService,
     private warehouseService: WarehouseService,
     private beanInService: BeamInService,
+    @Inject(forwardRef(() => WorkshopDailyDataService))
+    private workshopDailyDataService: WorkshopDailyDataService,
   ) {}
 
   private async updateWarehouseRecord({
@@ -587,6 +596,7 @@ export class WorkshopOutService {
           size: Number(trashVolume.toFixed(2)),
         },
       ],
+      totalWorkshopOutVolume,
     };
   }
 
@@ -848,10 +858,11 @@ export class WorkshopOutService {
 
     const woodClasses = await this.woodClassService.getAllWoodClasses();
 
-    // const workshopOutDatas = await this.get
-
     const workshopOutput = [];
 
+    // TODO: Не нужно мапить дни. Надо сделать как в одноименном методе в beam-in.service. И не забыть отсортировать и сгруппировать по дате, как
+    // в getProfitStatsByTimespan в этом файле
+    // Поискать где еще этот дурацкий map по датам проходится.
     await Promise.all(
       days.map(async (dayDate) => {
         const { data: workshopData } =
@@ -1158,6 +1169,167 @@ export class WorkshopOutService {
           y: profit,
         };
       });
+
+    return output;
+  }
+
+  async getWorkshopOutReportForMultipleDays({
+    workshopId,
+    startDate,
+    endDate,
+  }: {
+    workshopId: number;
+    startDate: string;
+    endDate: string;
+  }) {
+    const workshop = await this.workshopService.findWorkshopById(workshopId);
+
+    if (!workshop) {
+      throw new HttpException('Выбранный цех не найден', HttpStatus.NOT_FOUND);
+    }
+
+    const days = [];
+
+    // TODO: Для всех query параметров с датой нужна валидация
+    if (!startDate || !endDate) {
+      throw new HttpException(
+        'Необходимо указать query параметры startDate & endDate',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const momentStartDate = moment(startDate);
+    const now = momentStartDate.clone();
+
+    while (now.isSameOrBefore(endDate)) {
+      days.push(now.toISOString());
+      now.add(1, 'days');
+    }
+
+    if (days.length > 31) {
+      throw new HttpException(
+        'Количество запрашиваемых дней ограничено до 31',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const woodClasses = await this.woodClassService.getAllWoodClasses();
+
+    let output = [];
+
+    await Promise.all(
+      days.map(async (dayDate) => {
+        const { data: workshopOutData, totalWorkshopOutVolume } =
+          await this.getAllWoodOutForWorkshopForADay({
+            workshopId,
+            date: dayDate,
+          });
+
+        const { totalVolume: totalBeamInVolume } =
+          await this.beanInService.getAllBeamInForWorkshop({
+            workshopId,
+            startDate: dayDate,
+            endDate: dayDate,
+          });
+
+        const {
+          totalWoodPrice,
+          priceOfRawMaterials,
+          sawingPrice,
+          profit,
+          profitPerUnit,
+          dimensionOfTheDay,
+          woodNamingOfTheDay,
+        } = await this.workshopDailyDataService.getDailyStatsForWorkshop(
+          workshopId,
+          dayDate,
+        );
+
+        const outputItem: Record<string, any> = {};
+
+        outputItem.date = dayDate;
+        outputItem.woodNaming = woodNamingOfTheDay;
+        outputItem.dimension = dimensionOfTheDay;
+
+        outputItem.totalBeamInVolume = totalBeamInVolume;
+        outputItem.totalWorkshopOutVolume = totalWorkshopOutVolume;
+
+        outputItem.totalWoodPrice = totalWoodPrice;
+        outputItem.priceOfRawMaterials = priceOfRawMaterials;
+        outputItem.sawingPrice = sawingPrice;
+        outputItem.profit = profit;
+        outputItem.profitPerUnit = profitPerUnit;
+
+        woodClasses.forEach((woodClass) => {
+          const workshopOutDataByWoodClass = workshopOutData.filter(
+            (workshopOutDataItem) =>
+              workshopOutDataItem.woodClassId !== woodClass.id,
+          );
+
+          const currentWoodClassVolume = workshopOutDataByWoodClass.reduce(
+            (total, workshopRecord) => {
+              if (workshopRecord.woodClass.id === woodClass.id) {
+                return (
+                  total +
+                  workshopRecord.dimension.volume * workshopRecord.amount
+                );
+              }
+
+              return total;
+            },
+            0,
+          );
+
+          const percentageForCurrentWoodClassFromTotalVolume =
+            (currentWoodClassVolume / totalBeamInVolume) * 100;
+
+          let woodClassKey = '';
+
+          switch (woodClass.name) {
+            case 'Первый':
+              woodClassKey = 'firstClass';
+              break;
+            case 'Второй':
+              woodClassKey = 'secondClass';
+              break;
+            case 'Рыночный':
+              woodClassKey = 'marketClass';
+              break;
+            case 'Браун':
+              woodClassKey = 'brownClass';
+              break;
+            default:
+              break;
+          }
+
+          outputItem[`${woodClassKey}Volume`] = Number(
+            currentWoodClassVolume.toFixed(4),
+          );
+          outputItem[`${woodClassKey}Percentage`] = Number(
+            percentageForCurrentWoodClassFromTotalVolume.toFixed(2),
+          );
+        });
+
+        output.push(outputItem);
+      }),
+    );
+
+    output = output.sort((a, b) => {
+      const momentFirstDate = moment(a.date);
+      const momentSecondDate = moment(b.date);
+
+      const difference = momentFirstDate.diff(momentSecondDate, 'days');
+
+      if (difference > 1) {
+        return 1;
+      }
+
+      if (difference < 0) {
+        return -1;
+      }
+
+      return 0;
+    });
 
     return output;
   }
