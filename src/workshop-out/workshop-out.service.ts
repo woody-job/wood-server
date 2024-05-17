@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { WorkshopOut } from './workshop-out.model';
 import { WorkshopWoodPricesService } from 'src/workshop-wood-prices/workshop-wood-prices.service';
@@ -17,6 +23,8 @@ import { UpdateWorkshopOutDto } from './dtos/update-workshop-out.dto';
 import { WoodArrivalService } from 'src/wood-arrival/wood-arrival.service';
 import { WoodConditionService } from 'src/wood-condition/wood-condition.service';
 import { WarehouseService } from 'src/warehouse/warehouse.service';
+import { BeamInService } from 'src/beam-in/beam-in.service';
+import { WorkshopDailyDataService } from 'src/workshop-daily-data/workshop-daily-data.service';
 
 @Injectable()
 export class WorkshopOutService {
@@ -31,6 +39,9 @@ export class WorkshopOutService {
     private woodArrivalService: WoodArrivalService,
     private woodConditionService: WoodConditionService,
     private warehouseService: WarehouseService,
+    private beanInService: BeamInService,
+    @Inject(forwardRef(() => WorkshopDailyDataService))
+    private workshopDailyDataService: WorkshopDailyDataService,
   ) {}
 
   private async updateWarehouseRecord({
@@ -499,17 +510,112 @@ export class WorkshopOutService {
     return workshopOut;
   }
 
-  async getAllWoodOutForWorkshop({
+  async getAllWoodOutForWorkshopForADay({
+    workshopId,
+    date,
+  }: {
+    workshopId: number;
+    date: string;
+  }) {
+    if (!date) {
+      throw new HttpException(
+        'Query параметр date обязателен для запроса',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const momentDate = moment(date);
+
+    const year = momentDate.year();
+    const month = momentDate.month() + 1;
+    const day = momentDate.date();
+
+    const workshopOuts = await this.workshopOutRepository.findAll({
+      include: [WoodClass, WoodType, Dimension],
+      attributes: {
+        exclude: ['workshopId', 'woodClassId', 'woodTypeId', 'dimensionId'],
+      },
+      where: {
+        workshopId,
+        [Op.and]: [
+          Sequelize.where(
+            Sequelize.fn('date_trunc', 'day', Sequelize.col('date')),
+            Op.eq,
+            `${year}-${month}-${day}`,
+          ),
+        ],
+      },
+      order: [['date', 'DESC']],
+    });
+
+    const { totalVolume: totalBeamInVolume } =
+      await this.beanInService.getAllBeamInForWorkshop({
+        workshopId,
+        startDate: date,
+        endDate: date,
+      });
+
+    const woodClasses = await this.woodClassService.getAllWoodClasses();
+
+    let totalWorkshopOutVolume = 0;
+
+    const outputSunburstData = woodClasses.map((woodClass) => {
+      const workshopOutsByWoodClass = workshopOuts.filter(
+        (workshopOut) => workshopOut.woodClass.id === woodClass.id,
+      );
+
+      const woodClassVolume = workshopOutsByWoodClass.reduce(
+        (total, workshopOut) => {
+          return total + workshopOut.dimension.volume * workshopOut.amount;
+        },
+        0,
+      );
+
+      return {
+        name: woodClass.name,
+        size: Number(woodClassVolume.toFixed(2)),
+      };
+    });
+
+    workshopOuts.forEach((workshopOut) => {
+      totalWorkshopOutVolume +=
+        workshopOut.dimension.volume * workshopOut.amount;
+    });
+
+    const trashVolume = totalBeamInVolume - totalWorkshopOutVolume;
+
+    return {
+      data: workshopOuts,
+      sunburstData: [
+        {
+          name: 'Выход',
+          children: outputSunburstData,
+        },
+        {
+          name: 'Мусор',
+          size: Number(trashVolume.toFixed(2)),
+        },
+      ],
+      totalWorkshopOutVolume,
+    };
+  }
+
+  async getAllWoodOutForWorkshopForMultipleDays({
     workshopId,
     startDate,
     endDate,
   }: {
     workshopId: number;
-    // startDate и endDate должны иметь только год, месяц и день. Часы и минуты
-    // должны быть 0
-    startDate?: string;
-    endDate?: string;
+    startDate: string;
+    endDate: string;
   }) {
+    if (!startDate || !endDate) {
+      throw new HttpException(
+        'Query параметры startDate & endDate обязателен для запроса',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const momentStartDate = moment(startDate);
     const momentEndDate = moment(endDate);
 
@@ -528,26 +634,20 @@ export class WorkshopOutService {
       },
       where: {
         workshopId,
-        ...(startDate && endDate
-          ? {
-              date: {
-                [Op.and]: [
-                  Sequelize.where(
-                    Sequelize.fn('date_trunc', 'day', Sequelize.col('date')),
-                    Op.gte,
-                    `${startYear}-${startMonth}-${startDay}`,
-                  ),
-                  Sequelize.where(
-                    Sequelize.fn('date_trunc', 'day', Sequelize.col('date')),
-                    Op.lte,
-                    `${endYear}-${endMonth}-${endDay}`,
-                  ),
-                ],
-              },
-            }
-          : {}),
+        [Op.and]: [
+          Sequelize.where(
+            Sequelize.fn('date_trunc', 'day', Sequelize.col('date')),
+            Op.gte,
+            `${startYear}-${startMonth}-${startDay}`,
+          ),
+          Sequelize.where(
+            Sequelize.fn('date_trunc', 'day', Sequelize.col('date')),
+            Op.lte,
+            `${endYear}-${endMonth}-${endDay}`,
+          ),
+        ],
       },
-      order: [['date', 'DESC']],
+      // order: [['date', 'DESC']],
     });
 
     return workshopOuts;
@@ -639,7 +739,6 @@ export class WorkshopOutService {
 
   async getOverallWorkshopsStats() {
     const currentDate = moment();
-
     const weekStart = currentDate.clone().startOf('isoWeek');
 
     const days: string[] = Array.from(Array(6).keys()).map((dayNumber) => {
@@ -657,11 +756,11 @@ export class WorkshopOutService {
 
         await Promise.all(
           days.map(async (dayDate) => {
-            const workshopData = await this.getAllWoodOutForWorkshop({
-              workshopId: workshop.id,
-              startDate: dayDate,
-              endDate: dayDate,
-            });
+            const { data: workshopData } =
+              await this.getAllWoodOutForWorkshopForADay({
+                workshopId: workshop.id,
+                date: dayDate,
+              });
 
             const dayOutput = {
               date: dayDate,
@@ -715,6 +814,109 @@ export class WorkshopOutService {
     );
 
     return output;
+  }
+
+  async getWorkshopsStatsByTimespan({
+    workshopId,
+    startDate,
+    endDate,
+  }: {
+    workshopId: number;
+    startDate: string;
+    endDate: string;
+  }) {
+    const workshop = await this.workshopService.findWorkshopById(workshopId);
+
+    if (!workshop) {
+      throw new HttpException('Выбранный цех не найден', HttpStatus.NOT_FOUND);
+    }
+
+    const days = [];
+
+    // TODO: Для всех query параметров с датой нужна валидация
+    if (!startDate || !endDate) {
+      throw new HttpException(
+        'Необходимо указать query параметры startDate & endDate',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const momentStartDate = moment(startDate);
+    const now = momentStartDate.clone();
+
+    while (now.isSameOrBefore(endDate)) {
+      days.push(now.toISOString());
+      now.add(1, 'days');
+    }
+
+    if (days.length > 31) {
+      throw new HttpException(
+        'Количество запрашиваемых дней ограничено до 31',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const woodClasses = await this.woodClassService.getAllWoodClasses();
+
+    const workshopOutput = [];
+
+    // TODO: Не нужно мапить дни. Надо сделать как в одноименном методе в beam-in.service. И не забыть отсортировать и сгруппировать по дате, как
+    // в getProfitStatsByTimespan в этом файле
+    // Поискать где еще этот дурацкий map по датам проходится.
+    await Promise.all(
+      days.map(async (dayDate) => {
+        const { data: workshopData } =
+          await this.getAllWoodOutForWorkshopForADay({
+            workshopId: workshop.id,
+            date: dayDate,
+          });
+
+        const dayOutput = {
+          date: dayDate,
+          woods: [],
+        };
+
+        woodClasses.forEach((woodClass) => {
+          const workshopDataByWoodClass = workshopData.filter(
+            (workshopDataItem) => workshopDataItem.woodClassId !== woodClass.id,
+          );
+
+          const totalVolume = workshopDataByWoodClass.reduce(
+            (total, workshopRecord) =>
+              total + workshopRecord.dimension.volume * workshopRecord.amount,
+            0,
+          );
+
+          const currentWoodClassVolume = workshopDataByWoodClass.reduce(
+            (total, workshopRecord) => {
+              if (workshopRecord.woodClass.id === woodClass.id) {
+                return (
+                  total +
+                  workshopRecord.dimension.volume * workshopRecord.amount
+                );
+              }
+
+              return total;
+            },
+            0,
+          );
+
+          const percentageForCurrentWoodClassFromTotalVolume =
+            (currentWoodClassVolume / totalVolume) * 100;
+
+          dayOutput.woods.push({
+            name: woodClass.name,
+            percentage: Number(
+              percentageForCurrentWoodClassFromTotalVolume.toFixed(2),
+            ),
+          });
+        });
+
+        workshopOutput.push(dayOutput);
+      }),
+    );
+
+    return workshopOutput;
   }
 
   async getProducedWoodStats({
@@ -823,5 +1025,312 @@ export class WorkshopOutService {
       sunburstData,
       totalVolume: Number(totalVolume.toFixed(4)),
     };
+  }
+
+  async getProfitStatsByTimespan({
+    workshopId,
+    startDate,
+    endDate,
+    isPerUnitSearch,
+  }: {
+    workshopId: number;
+    startDate: string;
+    endDate: string;
+    isPerUnitSearch: boolean;
+  }) {
+    const workshop = await this.workshopService.findWorkshopById(workshopId);
+
+    if (!workshop) {
+      throw new HttpException('Выбранный цех не найден', HttpStatus.NOT_FOUND);
+    }
+
+    const days = [];
+
+    // TODO: Для всех query параметров с датой нужна валидация
+    if (!startDate || !endDate) {
+      throw new HttpException(
+        'Необходимо указать query параметры startDate & endDate',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const momentStartDate = moment(startDate);
+    const now = momentStartDate.clone();
+
+    while (now.isSameOrBefore(endDate)) {
+      days.push(now.toISOString());
+      now.add(1, 'days');
+    }
+
+    if (days.length > 31) {
+      throw new HttpException(
+        'Количество запрашиваемых дней ограничено до 31',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const workshopOuts = await this.getAllWoodOutForWorkshopForMultipleDays({
+      workshopId,
+      startDate,
+      endDate,
+    });
+
+    const workshopWoodPrices = workshop.workshopWoodPrices;
+
+    let output = [];
+
+    workshopOuts.forEach((workshopOut) => {
+      const volume = workshopOut.dimension.volume * workshopOut.amount;
+
+      const currentWoodPrice = workshopWoodPrices.find(
+        (workshopWoodPrice) =>
+          workshopWoodPrice.dimensionId === workshopOut.dimension.id &&
+          workshopWoodPrice.woodClassId === workshopOut.woodClass.id,
+      );
+
+      if (!currentWoodPrice) {
+        return;
+      }
+
+      const totalWoodPrice = currentWoodPrice.price * volume;
+      const priceOfRawMaterials = workshop.priceOfRawMaterials * volume;
+      const sawingPrice = workshop.sawingPrice * volume;
+
+      const profit = Number(
+        (totalWoodPrice - priceOfRawMaterials - sawingPrice).toFixed(2),
+      );
+
+      const existentOutItem = output.find((item) => {
+        const momentItemDate = moment(item.x);
+        const momentWorkshopOutDate = moment(workshopOut.date);
+
+        const itemYear = momentItemDate.year();
+        const itemMonth = momentItemDate.month() + 1;
+        const itemDay = momentItemDate.date();
+
+        const workshopOutYear = momentWorkshopOutDate.year();
+        const workshopOutMonth = momentWorkshopOutDate.month() + 1;
+        const workshopOutDay = momentWorkshopOutDate.date();
+
+        return (
+          itemYear === workshopOutYear &&
+          itemMonth === workshopOutMonth &&
+          itemDay === workshopOutDay
+        );
+      });
+
+      if (!existentOutItem) {
+        output.push({
+          x: workshopOut.date,
+          y: profit,
+          volume,
+          totalWoodPrice,
+          priceOfRawMaterials,
+          sawingPrice,
+          amount: workshopOut.amount,
+        });
+
+        return;
+      }
+
+      existentOutItem.y += profit;
+      existentOutItem.totalWoodPrice += totalWoodPrice;
+      existentOutItem.priceOfRawMaterials += priceOfRawMaterials;
+      existentOutItem.sawingPrice += sawingPrice;
+      existentOutItem.amount += workshopOut.amount;
+    });
+
+    output = output
+      .sort((a, b) => {
+        const momentFirstDate = moment(a.x);
+        const momentSecondDate = moment(b.x);
+
+        const difference = momentFirstDate.diff(momentSecondDate, 'days');
+
+        if (difference > 1) {
+          return 1;
+        }
+
+        if (difference < 0) {
+          return -1;
+        }
+
+        return 0;
+      })
+      .map((item) => {
+        let profit = item.y;
+
+        if (isPerUnitSearch) {
+          profit = Number((item.y / item.volume).toFixed(2));
+        }
+
+        return {
+          x: item.x,
+          y: profit,
+        };
+      });
+
+    return output;
+  }
+
+  async getWorkshopOutReportForMultipleDays({
+    workshopId,
+    startDate,
+    endDate,
+  }: {
+    workshopId: number;
+    startDate: string;
+    endDate: string;
+  }) {
+    const workshop = await this.workshopService.findWorkshopById(workshopId);
+
+    if (!workshop) {
+      throw new HttpException('Выбранный цех не найден', HttpStatus.NOT_FOUND);
+    }
+
+    const days = [];
+
+    // TODO: Для всех query параметров с датой нужна валидация
+    if (!startDate || !endDate) {
+      throw new HttpException(
+        'Необходимо указать query параметры startDate & endDate',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const momentStartDate = moment(startDate);
+    const now = momentStartDate.clone();
+
+    while (now.isSameOrBefore(endDate)) {
+      days.push(now.toISOString());
+      now.add(1, 'days');
+    }
+
+    if (days.length > 31) {
+      throw new HttpException(
+        'Количество запрашиваемых дней ограничено до 31',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const woodClasses = await this.woodClassService.getAllWoodClasses();
+
+    let output = [];
+
+    await Promise.all(
+      days.map(async (dayDate) => {
+        const { data: workshopOutData, totalWorkshopOutVolume } =
+          await this.getAllWoodOutForWorkshopForADay({
+            workshopId,
+            date: dayDate,
+          });
+
+        const { totalVolume: totalBeamInVolume } =
+          await this.beanInService.getAllBeamInForWorkshop({
+            workshopId,
+            startDate: dayDate,
+            endDate: dayDate,
+          });
+
+        const {
+          totalWoodPrice,
+          priceOfRawMaterials,
+          sawingPrice,
+          profit,
+          profitPerUnit,
+          dimensionOfTheDay,
+          woodNamingOfTheDay,
+        } = await this.workshopDailyDataService.getDailyStatsForWorkshop(
+          workshopId,
+          dayDate,
+        );
+
+        const outputItem: Record<string, any> = {};
+
+        outputItem.date = dayDate;
+        outputItem.woodNaming = woodNamingOfTheDay;
+        outputItem.dimension = dimensionOfTheDay;
+
+        outputItem.totalBeamInVolume = totalBeamInVolume;
+        outputItem.totalWorkshopOutVolume = totalWorkshopOutVolume;
+
+        outputItem.totalWoodPrice = totalWoodPrice;
+        outputItem.priceOfRawMaterials = priceOfRawMaterials;
+        outputItem.sawingPrice = sawingPrice;
+        outputItem.profit = profit;
+        outputItem.profitPerUnit = profitPerUnit;
+
+        woodClasses.forEach((woodClass) => {
+          const workshopOutDataByWoodClass = workshopOutData.filter(
+            (workshopOutDataItem) =>
+              workshopOutDataItem.woodClassId !== woodClass.id,
+          );
+
+          const currentWoodClassVolume = workshopOutDataByWoodClass.reduce(
+            (total, workshopRecord) => {
+              if (workshopRecord.woodClass.id === woodClass.id) {
+                return (
+                  total +
+                  workshopRecord.dimension.volume * workshopRecord.amount
+                );
+              }
+
+              return total;
+            },
+            0,
+          );
+
+          const percentageForCurrentWoodClassFromTotalVolume =
+            (currentWoodClassVolume / totalBeamInVolume) * 100;
+
+          let woodClassKey = '';
+
+          switch (woodClass.name) {
+            case 'Первый':
+              woodClassKey = 'firstClass';
+              break;
+            case 'Второй':
+              woodClassKey = 'secondClass';
+              break;
+            case 'Рыночный':
+              woodClassKey = 'marketClass';
+              break;
+            case 'Браун':
+              woodClassKey = 'brownClass';
+              break;
+            default:
+              break;
+          }
+
+          outputItem[`${woodClassKey}Volume`] = Number(
+            currentWoodClassVolume.toFixed(4),
+          );
+          outputItem[`${woodClassKey}Percentage`] = Number(
+            percentageForCurrentWoodClassFromTotalVolume.toFixed(2),
+          );
+        });
+
+        output.push(outputItem);
+      }),
+    );
+
+    output = output.sort((a, b) => {
+      const momentFirstDate = moment(a.date);
+      const momentSecondDate = moment(b.date);
+
+      const difference = momentFirstDate.diff(momentSecondDate, 'days');
+
+      if (difference > 1) {
+        return 1;
+      }
+
+      if (difference < 0) {
+        return -1;
+      }
+
+      return 0;
+    });
+
+    return output;
   }
 }

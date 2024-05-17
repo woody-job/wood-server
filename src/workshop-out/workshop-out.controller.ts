@@ -40,16 +40,14 @@ export class WorkshopOutController {
     summary:
       'Получение списка выхода из цеха с возможностью фильтрации по дате',
   })
-  @Get('/list/:workshopId')
-  getAll(
+  @Get('/day-data/:workshopId')
+  getAllForADay(
     @Param('workshopId') workshopId: string,
-    @Query('startDate') startDate: string | undefined,
-    @Query('endDate') endDate: string | undefined,
+    @Query('date') date: string,
   ) {
-    return this.workshopOutService.getAllWoodOutForWorkshop({
+    return this.workshopOutService.getAllWoodOutForWorkshopForADay({
       workshopId: Number(workshopId),
-      startDate,
-      endDate,
+      date,
     });
   }
 
@@ -62,6 +60,46 @@ export class WorkshopOutController {
   }
 
   @ApiOperation({
+    summary: 'Получение выхода для цеха как для чартов на странице статистики',
+  })
+  @Get('/get/workshop-stats/:workshopId')
+  getStatsForWorkshop(
+    @Param('workshopId') workshopId: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    return this.workshopOutService.getWorkshopsStatsByTimespan({
+      workshopId: Number(workshopId),
+      startDate,
+      endDate,
+    });
+  }
+
+  @ApiOperation({
+    summary: 'Получение итоговой прибыли для цеха за выбранные дни',
+  })
+  @Get('/get/workshop-stats/profit/:workshopId')
+  getProfitStats(
+    @Param('workshopId') workshopId: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('perUnit') perUnit: string,
+  ) {
+    let isPerUnitSearch = false;
+
+    if (perUnit === 'true') {
+      isPerUnitSearch = true;
+    }
+
+    return this.workshopOutService.getProfitStatsByTimespan({
+      workshopId: Number(workshopId),
+      startDate,
+      endDate,
+      isPerUnitSearch,
+    });
+  }
+
+  @ApiOperation({
     summary: 'Получение свода о произведенной доске в цехах',
   })
   @Get('/get/produced-stats')
@@ -70,6 +108,22 @@ export class WorkshopOutController {
     @Query('endDate') endDate: string | undefined,
   ) {
     return this.workshopOutService.getProducedWoodStats({ startDate, endDate });
+  }
+
+  @ApiOperation({
+    summary: 'Получение сгруппированных данных о работе цеха за выбранные дни',
+  })
+  @Get('/get/workshop-stats/report/:workshopId')
+  getReport(
+    @Param('workshopId') workshopId: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    return this.workshopOutService.getWorkshopOutReportForMultipleDays({
+      workshopId: Number(workshopId),
+      startDate,
+      endDate,
+    });
   }
 
   @ApiOperation({ summary: 'Удаление выхода доски из цеха' })

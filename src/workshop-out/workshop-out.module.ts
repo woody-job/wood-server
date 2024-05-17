@@ -16,6 +16,8 @@ import { DimensionModule } from 'src/dimension/dimension.module';
 import { WoodConditionModule } from 'src/wood-condition/wood-condition.module';
 import { WoodArrivalModule } from 'src/wood-arrival/wood-arrival.module';
 import { WarehouseModule } from 'src/warehouse/warehouse.module';
+import { BeamInModule } from 'src/beam-in/beam-in.module';
+import { WorkshopDailyDataModule } from 'src/workshop-daily-data/workshop-daily-data.module';
 
 @Module({
   controllers: [WorkshopOutController],
@@ -37,6 +39,8 @@ import { WarehouseModule } from 'src/warehouse/warehouse.module';
     DimensionModule,
     WoodArrivalModule,
     WarehouseModule,
+    BeamInModule,
+    forwardRef(() => WorkshopDailyDataModule),
   ],
   exports: [WorkshopOutService],
 })

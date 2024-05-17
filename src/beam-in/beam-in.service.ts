@@ -160,7 +160,75 @@ export class BeamInService {
       order: [['date', 'DESC']],
     });
 
-    return beamIns;
+    let totalVolume = 0;
+
+    beamIns.forEach((beamIn) => {
+      totalVolume += beamIn.beamSize.volume * beamIn.amount;
+    });
+
+    return {
+      data: beamIns,
+      totalVolume: Number(totalVolume.toFixed(2)),
+    };
+  }
+
+  async getWorkshopsStatsByTimespan({
+    workshopId,
+    startDate,
+    endDate,
+  }: {
+    workshopId: number;
+    startDate: string;
+    endDate: string;
+  }) {
+    const workshop = await this.workshopService.findWorkshopById(workshopId);
+
+    if (!workshop) {
+      throw new HttpException('Выбранный цех не найден', HttpStatus.NOT_FOUND);
+    }
+
+    // TODO: Для всех query параметров с датой нужна валидация
+    if (!startDate || !endDate) {
+      throw new HttpException(
+        'Необходимо указать query параметры startDate & endDate',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const momentStartDate = moment(startDate);
+    const now = momentStartDate.clone();
+    const days = [];
+
+    while (now.isSameOrBefore(endDate)) {
+      days.push(now.toISOString());
+      now.add(1, 'days');
+    }
+
+    if (days.length > 31) {
+      throw new HttpException(
+        'Количество запрашиваемых дней ограничено до 31',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const { data: beamIns } = await this.getAllBeamInForWorkshop({
+      workshopId,
+      startDate,
+      endDate,
+    });
+
+    const output = beamIns.map((beamIn) => {
+      const volume = Number(
+        (beamIn.beamSize.volume * beamIn.amount).toFixed(2),
+      );
+
+      return {
+        x: beamIn.date,
+        y: volume,
+      };
+    });
+
+    return output;
   }
 
   async deleteBeamInFromWorkshop(beamInId: number) {

@@ -53,6 +53,22 @@ export class BeamInController {
     });
   }
 
+  @ApiOperation({
+    summary: 'Получение свода входа для цеха за выбранные дни',
+  })
+  @Get('/get/workshop-stats/:workshopId')
+  getStatsForWorkshop(
+    @Param('workshopId') workshopId: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    return this.beamInService.getWorkshopsStatsByTimespan({
+      workshopId: Number(workshopId),
+      startDate,
+      endDate,
+    });
+  }
+
   @ApiOperation({ summary: 'Удаление входа леса в цех' })
   @Delete('/:beamInId')
   delete(@Param('beamInId') beamInId: string) {

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { WorkshopDailyDataService } from './workshop-daily-data.service';
 import { WorkshopDailyDataController } from './workshop-daily-data.controller';
 import { SequelizeModule } from '@nestjs/sequelize';
@@ -8,6 +8,7 @@ import { Workshop } from 'src/workshop/workshop.model';
 import { WoodNamingModule } from 'src/wood-naming/wood-naming.module';
 import { WorkshopModule } from 'src/workshop/workshop.module';
 import { DimensionModule } from 'src/dimension/dimension.module';
+import { WorkshopOutModule } from 'src/workshop-out/workshop-out.module';
 
 @Module({
   providers: [WorkshopDailyDataService],
@@ -17,6 +18,8 @@ import { DimensionModule } from 'src/dimension/dimension.module';
     WoodNamingModule,
     WorkshopModule,
     DimensionModule,
+    forwardRef(() => WorkshopOutModule),
   ],
+  exports: [WorkshopDailyDataService],
 })
 export class WorkshopDailyDataModule {}

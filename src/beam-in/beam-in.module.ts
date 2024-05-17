@@ -16,5 +16,6 @@ import { BeamSizeModule } from 'src/beam-size/beam-size.module';
     WorkshopModule,
     BeamSizeModule,
   ],
+  exports: [BeamInService],
 })
 export class BeamInModule {}
