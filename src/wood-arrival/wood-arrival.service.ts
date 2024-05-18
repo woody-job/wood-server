@@ -65,15 +65,7 @@ export class WoodArrivalService {
       let newAmount = existentWarehouseRecord.amount;
 
       if (isCreate) {
-        if (existentWarehouseRecord.amount < amount) {
-          newAmount =
-            existentWarehouseRecord.amount +
-            (amount - existentWarehouseRecord.amount);
-        }
-
-        if (amount > existentWarehouseRecord.amount) {
-          newAmount = amount;
-        }
+        newAmount = existentWarehouseRecord.amount + amount;
       } else {
         if (action === 'add') {
           newAmount = existentWarehouseRecord.amount + amount;

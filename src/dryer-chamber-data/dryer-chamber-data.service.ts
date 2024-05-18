@@ -77,7 +77,65 @@ export class DryerChamberDataService {
       where: { isDrying: true },
     });
 
-    return dryerChamberDatas;
+    const woodTypes = await this.woodTypeService.getAllWoodTypes();
+    const woodClasses = await this.woodClassService.getAllWoodClasses();
+
+    let totalVolume = 0;
+
+    const outputSunburstData = woodTypes.map((woodType) => {
+      const dryerChamberDatasByWoodType = dryerChamberDatas.filter(
+        (warehouseRecord) => warehouseRecord.woodType.id === woodType.id,
+      );
+
+      return {
+        name: woodType.name,
+        children: woodClasses.map((woodClass) => {
+          const dryerChamberDatasByWoodClass =
+            dryerChamberDatasByWoodType.filter(
+              (warehouseRecord) =>
+                warehouseRecord.woodClass.id === woodClass.id,
+            );
+
+          const dimensionOutput = {
+            name: woodClass.name,
+            children: [],
+          };
+
+          dryerChamberDatasByWoodClass.forEach((warehouseRecord) => {
+            const dimensionString = `${warehouseRecord.dimension.width}x${warehouseRecord.dimension.thickness}x${warehouseRecord.dimension.length}`;
+            const volume = Number(
+              (
+                warehouseRecord.dimension.volume * warehouseRecord.amount
+              ).toFixed(4),
+            );
+
+            totalVolume += volume;
+
+            const existentWoodClassOutputChild = dimensionOutput.children.find(
+              (child) => child.name === dimensionString,
+            );
+
+            if (existentWoodClassOutputChild) {
+              existentWoodClassOutputChild.size = Number(
+                (existentWoodClassOutputChild.size + volume).toFixed(2),
+              );
+            } else {
+              dimensionOutput.children.push({
+                name: dimensionString,
+                size: volume,
+              });
+            }
+          });
+
+          return dimensionOutput;
+        }),
+      };
+    });
+
+    return {
+      sunburstData: outputSunburstData,
+      totalVolume: Number(totalVolume.toFixed(2)),
+    };
   }
 
   async getAllRecords() {
