@@ -175,6 +175,16 @@ export class WarehouseService {
   }
 
   async getAllWarehouseRecordsByWoodCondition(woodConditionId: number) {
+    const woodCondition =
+      await this.woodConditionService.findWoodConditionById(woodConditionId);
+
+    if (!woodCondition) {
+      throw new HttpException(
+        'Выбранное состояние доски не найдено',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
     const warehouseRecords = await this.warehouseRepository.findAll({
       include: [WoodClass, WoodType, WoodCondition, Dimension],
       attributes: {
@@ -190,7 +200,50 @@ export class WarehouseService {
       },
     });
 
-    return warehouseRecords;
+    const woodTypes = await this.woodTypeService.getAllWoodTypes();
+    const woodClasses = await this.woodClassService.getAllWoodClasses();
+
+    let totalVolume = 0;
+
+    const outputSunburstData = woodTypes.map((woodType) => {
+      const warehouseRecordsByWoodType = warehouseRecords.filter(
+        (warehouseRecord) => warehouseRecord.woodType.id === woodType.id,
+      );
+
+      return {
+        name: woodType.name,
+        children: woodClasses.map((woodClass) => {
+          const warehouseRecordsByWoodClass = warehouseRecordsByWoodType.filter(
+            (warehouseRecord) => warehouseRecord.woodClass.id === woodClass.id,
+          );
+
+          return {
+            name: woodClass.name,
+            children: warehouseRecordsByWoodClass.map((warehouseRecord) => {
+              const dimensionString = `${warehouseRecord.dimension.width}x${warehouseRecord.dimension.thickness}x${warehouseRecord.dimension.length}`;
+              const volume = Number(
+                (
+                  warehouseRecord.dimension.volume * warehouseRecord.amount
+                ).toFixed(4),
+              );
+
+              totalVolume += volume;
+
+              return {
+                name: dimensionString,
+                size: volume,
+              };
+            }),
+          };
+        }),
+      };
+    });
+
+    return {
+      sunburstData: outputSunburstData,
+      totalVolume: Number(totalVolume.toFixed(2)),
+      oldOutput: warehouseRecords,
+    };
   }
 
   async deleteWarehouseRecord(warehouseRecordId: number) {
