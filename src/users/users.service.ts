@@ -84,4 +84,10 @@ export class UsersService {
 
     return user;
   }
+
+  async getUserById(userId: number) {
+    const user = await this.userRepository.findByPk(userId);
+
+    return user;
+  }
 }

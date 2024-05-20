@@ -45,7 +45,7 @@ export class AuthService {
   }
 
   async updateUser(userId: number, userDto: CreateUserDto) {
-    const existentUser = await this.userService.getUserByLogin(userDto.login);
+    const existentUser = await this.userService.getUserById(userId);
 
     if (!existentUser) {
       throw new HttpException(
