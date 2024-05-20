@@ -5,7 +5,7 @@ import { ValidationPipe } from './pipes/validation.pipe';
 
 async function bootstrap() {
   const PORT = process.env.PORT || 5000;
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: true });
 
   // swagger setup
   const config = new DocumentBuilder()
@@ -13,6 +13,14 @@ async function bootstrap() {
     .setDescription('Документация REST API')
     .setVersion('1.0.0')
     .build();
+
+  // adding cors
+  app.enableCors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  });
 
   const document = SwaggerModule.createDocument(app, config);
 
