@@ -12,7 +12,7 @@ export class CreateUserDto {
     description: 'ФИО пользователя',
   })
   @IsString({ message: 'Должно быть строкой' })
-  @Length(6, 30, { message: 'Не меньше 6 и не больше 30 символов' })
+  @Length(6, 30, { message: 'Не меньше 6 и не больше 60 символов' })
   readonly fullName: string;
 
   @ApiProperty({

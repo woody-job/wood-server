@@ -121,6 +121,7 @@ export class DimensionService {
       attributes: {
         exclude: ['woodClassId'],
       },
+      order: [['id', 'DESC']],
     });
 
     return dimensions;
@@ -135,6 +136,7 @@ export class DimensionService {
       attributes: {
         exclude: ['woodClassId'],
       },
+      order: [['id', 'DESC']],
     });
 
     return dimensions;

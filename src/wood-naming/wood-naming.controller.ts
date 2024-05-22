@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { WoodNamingService } from './wood-naming.service';
 import { CreateWoodNamingDto } from './dtos/create-wood-naming.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -20,9 +28,21 @@ export class WoodNamingController {
     return this.woodNamingService.createWoodNaming(woodNamingDto);
   }
 
+  @ApiOperation({ summary: 'Редактирование условного обозначения' })
+  @Put('/:woodNamingId')
+  update(
+    @Param('woodNamingId') woodNamingId: string,
+    @Body() woodNamingDto: CreateWoodNamingDto,
+  ) {
+    return this.woodNamingService.updateWoodNaming(
+      Number(woodNamingId),
+      woodNamingDto,
+    );
+  }
+
   @ApiOperation({ summary: 'Удаление условного обозначения' })
-  @Delete('/:id')
-  delete(@Param('id') woodNamingId: string) {
+  @Delete('/:woodNamingId')
+  delete(@Param('woodNamingId') woodNamingId: string) {
     return this.woodNamingService.deleteWoodNaming(Number(woodNamingId));
   }
 }
