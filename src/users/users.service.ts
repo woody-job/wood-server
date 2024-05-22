@@ -71,7 +71,12 @@ export class UsersService {
   }
 
   async getAllUsers() {
-    const users = await this.userRepository.findAll({ include: { all: true } }); // TODO: Разобраться с отправкой хешированного пароля
+    const users = await this.userRepository.findAll({
+      attributes: {
+        exclude: ['password'],
+      },
+      order: [['id', 'DESC']],
+    });
 
     return users;
   }

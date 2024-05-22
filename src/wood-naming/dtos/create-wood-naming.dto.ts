@@ -7,6 +7,6 @@ export class CreateWoodNamingDto {
     description: 'Название условного обозначения',
   })
   @IsString()
-  @Length(2, 20, { message: 'Не меньше 2 и не больше 20 символов' })
+  @Length(2, 40, { message: 'Не меньше 2 и не больше 40 символов' })
   readonly name: string;
 }
