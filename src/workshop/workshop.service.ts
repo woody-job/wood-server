@@ -44,7 +44,9 @@ export class WorkshopService {
   }
 
   async getAllWorkshops() {
-    const workshops = await this.workshopRepository.findAll();
+    const workshops = await this.workshopRepository.findAll({
+      order: [['id', 'ASC']],
+    });
 
     return workshops;
   }
