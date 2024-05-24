@@ -458,6 +458,13 @@ export class DryerChamberDataService {
     const dryerChamberData =
       await this.getDryingWoodByDryerChamberId(dryerChamberId);
 
+    if (!dryerChamberData) {
+      return {
+        data: [],
+        total: 0,
+      };
+    }
+
     const dimensionString = dryerChamberData
       ? `${dryerChamberData.dimension.width}x${dryerChamberData.dimension.thickness}x${dryerChamberData.dimension.length}`
       : '';
