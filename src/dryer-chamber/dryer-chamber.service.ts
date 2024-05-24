@@ -56,7 +56,9 @@ export class DryerChamberService {
   }
 
   async getAllDryerChambers() {
-    const dryerChambers = await this.dryerChamberRepository.findAll();
+    const dryerChambers = await this.dryerChamberRepository.findAll({
+      order: [['id', 'ASC']],
+    });
 
     return dryerChambers;
   }
