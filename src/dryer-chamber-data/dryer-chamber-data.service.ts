@@ -469,10 +469,22 @@ export class DryerChamberDataService {
         )
       : 0;
 
+    const woodClass = await this.woodClassService.findWoodClassById(
+      dryerChamberData.woodClass.id,
+    );
+
+    const data = {
+      name: woodClass.name,
+      children: [
+        {
+          name: dimensionString,
+          size: dimensionVolume,
+        },
+      ],
+    };
+
     return {
-      data: dryerChamberData
-        ? [{ name: dimensionString, size: dimensionVolume }]
-        : [],
+      data: dryerChamberData && woodClass ? [data] : [],
       total: dimensionVolume,
     };
   }
