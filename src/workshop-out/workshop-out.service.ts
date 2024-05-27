@@ -585,7 +585,7 @@ export class WorkshopOutService {
         },
         {
           name: 'Мусор',
-          size: Number(trashVolume.toFixed(2)),
+          size: trashVolume > 0 ? Number(trashVolume.toFixed(2)) : 0,
         },
       ],
       totalWorkshopOutVolume,
