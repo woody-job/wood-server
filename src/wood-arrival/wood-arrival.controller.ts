@@ -55,9 +55,24 @@ export class WoodArrivalController {
 
   @ApiOperation({
     summary: `Получение поступленний по состоянию доски (сырая/сухая) для страницы 
-      поступлений с возможностью фильтрации по датам`,
+      поступлений для конкретного дня (таблица + санберст)`,
   })
-  @Get('/get/stats/:woodConditionId')
+  @Get('/get/day-data-stats/:woodConditionId')
+  getArrivalDayStats(
+    @Param('woodConditionId') woodConditionId: string,
+    @Query('date') date,
+  ) {
+    return this.woodArrivalService.getWoodArrivalStatsByWoodConditionForDay({
+      woodConditionId: Number(woodConditionId),
+      date,
+    });
+  }
+
+  @ApiOperation({
+    summary: `Получение поступленний по состоянию доски (сырая/сухая) для страницы 
+      поступлений с возможностью фильтрации по датам (только санберст)`,
+  })
+  @Get('/get/day-range-stats/:woodConditionId')
   getArrivalStats(
     @Param('woodConditionId') woodConditionId: string,
     @Query('startDate') startDate: string | undefined,
