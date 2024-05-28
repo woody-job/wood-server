@@ -411,45 +411,15 @@ export class WoodArrivalService {
       endDate,
     });
 
-    const tableData = []; // dimension, woodClass, amount
     const sunburstData = [];
     let totalVolume = 0;
 
     if (!woodArrivals || !woodArrivals.length) {
       return {
-        tableData: [],
         sunburstData: [],
         totalVolume: 0,
       };
     }
-
-    woodArrivals.forEach((woodArrival) => {
-      const dimensionString = `${woodArrival.dimension.width}x${woodArrival.dimension.thickness}x${woodArrival.dimension.length}`;
-      const woodClassName = woodArrival.woodClass.name;
-
-      // Вычислять данные для таблицы только в том случае, когда поиск происходит в рамках одного дня
-      if (startDate === endDate) {
-        const tableRow = {
-          dimension: dimensionString,
-          woodClass: woodClassName,
-          amount: woodArrival.amount,
-        };
-
-        const tableDataWithSameParams = tableData.find(
-          (tableRow) =>
-            tableRow.dimension === dimensionString &&
-            tableRow.woodClass === woodArrival.woodClass.name,
-        );
-
-        if (tableDataWithSameParams) {
-          tableDataWithSameParams.amount += woodArrival.amount;
-        } else {
-          tableData.push(tableRow);
-        }
-      }
-
-      totalVolume += woodArrival.dimension.volume * woodArrival.amount;
-    });
 
     woodClasses.forEach((woodClass) => {
       const woodArrivalsByWoodClass = woodArrivals.filter(
@@ -468,6 +438,8 @@ export class WoodArrivalService {
         const volume = Number(
           (woodArrival.dimension.volume * woodArrival.amount).toFixed(4),
         );
+
+        totalVolume += volume;
 
         const sunburstDataWithSameParams = sunburstItem.children.find(
           (item) => item.name === dimensionString,
@@ -494,8 +466,95 @@ export class WoodArrivalService {
     });
 
     return {
-      // Вычислять данные для таблицы только в том случае, когда поиск происходит в рамках одного дня
-      ...(startDate === endDate ? { tableData } : {}),
+      sunburstData,
+      totalVolume: Number(totalVolume.toFixed(4)),
+    };
+  }
+
+  async getWoodArrivalStatsByWoodConditionForDay({
+    woodConditionId,
+    date,
+  }: {
+    woodConditionId: number;
+    date: string;
+  }) {
+    if (!date) {
+      throw new HttpException(
+        'Query параметр date обязателен для запроса',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const woodClasses = await this.woodClassService.getAllWoodClasses();
+    const woodArrivals = await this.getAllWoodArrivalsByWoodCondition({
+      woodConditionId,
+      startDate: date,
+      endDate: date,
+    });
+
+    const tableData = []; // dimension, woodClass, amount, id (woodArrivalId)
+    const sunburstData = [];
+    let totalVolume = 0;
+
+    if (!woodArrivals || !woodArrivals.length) {
+      return {
+        tableData: [],
+        sunburstData: [],
+        totalVolume: 0,
+      };
+    }
+
+    woodArrivals.forEach((woodArrival) => {
+      const dimensionString = `${woodArrival.dimension.width}x${woodArrival.dimension.thickness}x${woodArrival.dimension.length}`;
+      const woodClassName = woodArrival.woodClass.name;
+
+      const tableRow = {
+        id: woodArrival.id,
+        dimension: dimensionString,
+        woodClass: woodClassName,
+        amount: woodArrival.amount,
+      };
+
+      const tableDataWithSameParams = tableData.find(
+        (tableRow) =>
+          tableRow.dimension === dimensionString &&
+          tableRow.woodClass === woodArrival.woodClass.name,
+      );
+
+      if (tableDataWithSameParams) {
+        tableDataWithSameParams.amount += woodArrival.amount;
+      } else {
+        tableData.push(tableRow);
+      }
+
+      totalVolume += woodArrival.dimension.volume * woodArrival.amount;
+    });
+
+    woodClasses.forEach((woodClass) => {
+      const woodArrivalsByWoodClass = woodArrivals.filter(
+        (woodArrival) => woodArrival.woodClass.id === woodClass.id,
+      );
+
+      const woodClassName = woodClass.name;
+
+      const sunburstItem = {
+        name: woodClassName,
+        size: 0,
+      };
+
+      woodArrivalsByWoodClass.forEach((woodArrival) => {
+        const volume = Number(
+          (woodArrival.dimension.volume * woodArrival.amount).toFixed(4),
+        );
+
+        sunburstItem.size += volume;
+      });
+
+      sunburstData.push(sunburstItem);
+    });
+
+    return {
+      tableData,
       sunburstData,
       totalVolume: Number(totalVolume.toFixed(4)),
     };
