@@ -11,7 +11,7 @@ import { DimensionService } from 'src/dimension/dimension.service';
 import { WorkshopOutService } from 'src/workshop-out/workshop-out.service';
 import { Dimension } from 'src/dimension/dimension.model';
 import { WoodNaming } from 'src/wood-naming/wood-naming.model';
-import { WorkshopWoodPrice } from 'src/workshop-wood-prices/workshop-wood-price.model';
+import { BeamInService } from 'src/beam-in/beam-in.service';
 
 @Injectable()
 export class WorkshopDailyDataService {
@@ -22,6 +22,7 @@ export class WorkshopDailyDataService {
     private woodNamingService: WoodNamingService,
     private dimensionService: DimensionService,
     private workshopOutService: WorkshopOutService,
+    private beamInService: BeamInService,
   ) {}
 
   async setWorkshopDailyData(workshopDailyDataDto: CreateWorkshopDailyDataDto) {
@@ -153,7 +154,16 @@ export class WorkshopDailyDataService {
         date,
       });
 
+    const { data: beamInsForDate } =
+      await this.beamInService.getAllBeamInForWorkshop({
+        workshopId,
+        startDate: date,
+        endDate: date,
+      });
+
     const workshopWoodPrices = workshop.workshopWoodPrices;
+
+    let totalVolume = 0;
 
     const output = {
       // Выручка
@@ -178,7 +188,13 @@ export class WorkshopDailyDataService {
           : null,
     };
 
-    let totalVolume = 0;
+    beamInsForDate.forEach((beamIn) => {
+      const volume = Number(
+        (beamIn.beamSize.volume * beamIn.amount).toFixed(2),
+      );
+
+      output.priceOfRawMaterials += workshop.priceOfRawMaterials * volume;
+    });
 
     workshopOutsForDate.forEach((workshopOut) => {
       const volume = workshopOut.dimension.volume * workshopOut.amount;
@@ -194,7 +210,6 @@ export class WorkshopDailyDataService {
       }
 
       output.totalWoodPrice += currentWoodPrice.price * volume;
-      output.priceOfRawMaterials += workshop.priceOfRawMaterials * volume;
       output.sawingPrice += workshop.sawingPrice * volume;
 
       totalVolume += volume;

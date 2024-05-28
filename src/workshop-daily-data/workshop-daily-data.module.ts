@@ -9,6 +9,7 @@ import { WoodNamingModule } from 'src/wood-naming/wood-naming.module';
 import { WorkshopModule } from 'src/workshop/workshop.module';
 import { DimensionModule } from 'src/dimension/dimension.module';
 import { WorkshopOutModule } from 'src/workshop-out/workshop-out.module';
+import { BeamInModule } from 'src/beam-in/beam-in.module';
 
 @Module({
   providers: [WorkshopDailyDataService],
@@ -19,6 +20,7 @@ import { WorkshopOutModule } from 'src/workshop-out/workshop-out.module';
     WorkshopModule,
     DimensionModule,
     forwardRef(() => WorkshopOutModule),
+    BeamInModule,
   ],
   exports: [WorkshopDailyDataService],
 })
