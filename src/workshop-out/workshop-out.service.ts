@@ -1238,13 +1238,21 @@ export class WorkshopOutService {
         );
 
         const outputItem: Record<string, any> = {};
+        const totalWorkshopOutPercentage = Number(
+          ((totalWorkshopOutVolume / totalBeamInVolume) * 100).toFixed(2),
+        );
 
+        outputItem.id = moment(dayDate).date() + moment(dayDate).month();
         outputItem.date = dayDate;
         outputItem.woodNaming = woodNamingOfTheDay;
         outputItem.dimension = dimensionOfTheDay;
 
-        outputItem.totalBeamInVolume = totalBeamInVolume;
-        outputItem.totalWorkshopOutVolume = totalWorkshopOutVolume;
+        // Важное условие для второго цеха
+        outputItem.totalBeamInVolume =
+          workshop.name === 'Цех 2'
+            ? totalWorkshopOutVolume * 2
+            : totalBeamInVolume;
+        outputItem.totalWorkshopOutPercentage = totalWorkshopOutPercentage;
 
         outputItem.totalWoodPrice = totalWoodPrice;
         outputItem.priceOfRawMaterials = priceOfRawMaterials;
