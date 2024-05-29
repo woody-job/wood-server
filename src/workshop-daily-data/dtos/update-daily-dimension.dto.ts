@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDateString, IsNumber } from 'class-validator';
 
-export class CreateWorkshopDailyDataDto {
+export class UpdateDailyDimensionDto {
   @ApiProperty({
     example: '2024-04-21T12:00:00.000Z',
     description: 'Дата в формате ISO 8601',
@@ -22,11 +22,4 @@ export class CreateWorkshopDailyDataDto {
   })
   @IsNumber({}, { message: 'Сечение выбрано некорректно' })
   readonly dimensionId: number;
-
-  @ApiProperty({
-    example: '1',
-    description: 'id условного обозначения',
-  })
-  @IsNumber({}, { message: 'Условное обозначение выбрано некорректно' })
-  readonly woodNamingId: number;
 }
