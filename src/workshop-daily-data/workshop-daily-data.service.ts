@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { WorkshopDailyData } from './workshop-daily-data.model';
 import { WorkshopService } from 'src/workshop/workshop.service';
 import { WoodNamingService } from 'src/wood-naming/wood-naming.service';
-import { CreateWorkshopDailyDataDto } from './dtos/create-workshop-daily-data.dto';
+import { UpdateDailyDimensionDto } from './dtos/update-daily-dimension.dto';
 import { Op, Sequelize } from 'sequelize';
 
 import * as moment from 'moment';
@@ -12,6 +12,7 @@ import { WorkshopOutService } from 'src/workshop-out/workshop-out.service';
 import { Dimension } from 'src/dimension/dimension.model';
 import { WoodNaming } from 'src/wood-naming/wood-naming.model';
 import { BeamInService } from 'src/beam-in/beam-in.service';
+import { UpdateDailyWoodNamingDto } from './dtos/update-daily-wood-naming.dto';
 
 @Injectable()
 export class WorkshopDailyDataService {
@@ -25,19 +26,10 @@ export class WorkshopDailyDataService {
     private beamInService: BeamInService,
   ) {}
 
-  async setWorkshopDailyData(workshopDailyDataDto: CreateWorkshopDailyDataDto) {
-    const { date, woodNamingId, workshopId, dimensionId } =
-      workshopDailyDataDto;
-
-    const woodNaming =
-      await this.woodNamingService.findWoodNamingById(woodNamingId);
-
-    if (!woodNaming) {
-      throw new HttpException(
-        'Выбранное условное обозначение не найдено',
-        HttpStatus.NOT_FOUND,
-      );
-    }
+  async updateDailyDimension(
+    workshopDailyDimensionDto: UpdateDailyDimensionDto,
+  ) {
+    const { date, workshopId, dimensionId } = workshopDailyDimensionDto;
 
     const workshop = await this.workshopService.findWorkshopById(workshopId);
 
@@ -75,11 +67,68 @@ export class WorkshopDailyDataService {
       });
 
     if (existentWorkshopDailyData) {
-      await existentWorkshopDailyData.$set('woodNaming', woodNamingId);
-      existentWorkshopDailyData.woodNaming = woodNaming;
-
       await existentWorkshopDailyData.$set('dimension', dimensionId);
       existentWorkshopDailyData.dimension = dimension;
+
+      return existentWorkshopDailyData;
+    }
+
+    const workshopDailyData = await this.workshopDailyDataRepository.create({
+      date,
+    });
+
+    await workshopDailyData.$set('workshop', workshopId);
+    workshopDailyData.workshop = workshop;
+
+    await workshopDailyData.$set('dimension', dimensionId);
+    workshopDailyData.dimension = dimension;
+
+    return workshopDailyData;
+  }
+
+  async updateDailyWoodNaming(
+    workshopDailyWoodNamingDto: UpdateDailyWoodNamingDto,
+  ) {
+    const { date, woodNamingId, workshopId } = workshopDailyWoodNamingDto;
+
+    const woodNaming =
+      await this.woodNamingService.findWoodNamingById(woodNamingId);
+
+    if (!woodNaming) {
+      throw new HttpException(
+        'Выбранное условное обозначение не найдено',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const workshop = await this.workshopService.findWorkshopById(workshopId);
+
+    if (!workshop) {
+      throw new HttpException('Выбранный цех не найден', HttpStatus.NOT_FOUND);
+    }
+
+    const momentDate = moment(date);
+
+    const year = momentDate.year();
+    const month = momentDate.month() + 1;
+    const day = momentDate.date();
+
+    // Лес и сечения дня можно менять у любого дня
+    const existentWorkshopDailyData =
+      await this.workshopDailyDataRepository.findOne({
+        where: {
+          [Op.and]: Sequelize.where(
+            Sequelize.fn('date_trunc', 'day', Sequelize.col('date')),
+            Op.eq,
+            `${year}-${month}-${day}`,
+          ),
+          workshopId,
+        },
+      });
+
+    if (existentWorkshopDailyData) {
+      await existentWorkshopDailyData.$set('woodNaming', woodNamingId);
+      existentWorkshopDailyData.woodNaming = woodNaming;
 
       return existentWorkshopDailyData;
     }
@@ -93,9 +142,6 @@ export class WorkshopDailyDataService {
 
     await workshopDailyData.$set('workshop', workshopId);
     workshopDailyData.workshop = workshop;
-
-    await workshopDailyData.$set('dimension', dimensionId);
-    workshopDailyData.dimension = dimension;
 
     return workshopDailyData;
   }

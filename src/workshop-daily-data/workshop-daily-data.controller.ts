@@ -8,8 +8,9 @@ import {
   Query,
 } from '@nestjs/common';
 import { WorkshopDailyDataService } from './workshop-daily-data.service';
-import { CreateWorkshopDailyDataDto } from './dtos/create-workshop-daily-data.dto';
+import { UpdateDailyDimensionDto } from './dtos/update-daily-dimension.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { UpdateDailyWoodNamingDto } from './dtos/update-daily-wood-naming.dto';
 
 @ApiTags('Ежедневные данные цеха (сечение дня и условное обозначение дня)')
 @Controller('workshop-daily-data')
@@ -17,12 +18,26 @@ export class WorkshopDailyDataController {
   constructor(private workshopDailyDataService: WorkshopDailyDataService) {}
 
   @ApiOperation({
-    summary: 'Выбор сечения дня и условного обозначения дня для цеха',
+    summary: 'Выбор сечения дня для цеха',
+  })
+  @Post('/dimension')
+  updateDailyDimension(
+    @Body() workshopDailyDimensionDto: UpdateDailyDimensionDto,
+  ) {
+    return this.workshopDailyDataService.updateDailyDimension(
+      workshopDailyDimensionDto,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Выбор условного обозначения дня для цеха',
   })
   @Post('/wood-naming')
-  setDailyData(@Body() workshopDailyDataDto: CreateWorkshopDailyDataDto) {
-    return this.workshopDailyDataService.setWorkshopDailyData(
-      workshopDailyDataDto,
+  updateDailyWoodNaming(
+    @Body() workshopDailyWoodNamingDto: UpdateDailyWoodNamingDto,
+  ) {
+    return this.workshopDailyDataService.updateDailyWoodNaming(
+      workshopDailyWoodNamingDto,
     );
   }
 
