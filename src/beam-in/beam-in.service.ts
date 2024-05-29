@@ -113,12 +113,14 @@ export class BeamInService {
     workshopId,
     startDate,
     endDate,
+    sortDirection = 'DESC',
   }: {
     workshopId: number;
     // startDate и endDate должны иметь только год, месяц и день. Часы и минуты
     // должны быть 0
     startDate?: string;
     endDate?: string;
+    sortDirection?: string;
   }) {
     const momentStartDate = moment(startDate);
     const momentEndDate = moment(endDate);
@@ -157,7 +159,7 @@ export class BeamInService {
             }
           : {}),
       },
-      order: [['date', 'DESC']],
+      order: [['date', sortDirection]],
     });
 
     let totalVolume = 0;
@@ -215,6 +217,7 @@ export class BeamInService {
       workshopId,
       startDate,
       endDate,
+      sortDirection: 'ASC',
     });
 
     const output = [];
