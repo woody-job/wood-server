@@ -217,15 +217,41 @@ export class BeamInService {
       endDate,
     });
 
-    const output = beamIns.map((beamIn) => {
+    const output = [];
+
+    beamIns.forEach((beamIn) => {
       const volume = Number(
         (beamIn.beamSize.volume * beamIn.amount).toFixed(2),
       );
 
-      return {
+      const beamInDate = moment(beamIn.date);
+      const beamInYear = beamInDate.year();
+      const beamInMonth = beamInDate.month() + 1;
+      const beamInDay = beamInDate.date();
+
+      const outputWithSameDate = output.find((outputItem) => {
+        const outputItemDate = moment(outputItem.x);
+        const outputItemYear = outputItemDate.year();
+        const outputItemMonth = outputItemDate.month() + 1;
+        const outputItemDay = outputItemDate.date();
+
+        return (
+          beamInYear === outputItemYear &&
+          beamInMonth === outputItemMonth &&
+          beamInDay === outputItemDay
+        );
+      });
+
+      if (outputWithSameDate) {
+        outputWithSameDate.y += volume;
+
+        return;
+      }
+
+      output.push({
         x: beamIn.date,
         y: volume,
-      };
+      });
     });
 
     return output;
