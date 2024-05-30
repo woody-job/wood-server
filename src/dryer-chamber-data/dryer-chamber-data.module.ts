@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { DryerChamberDataController } from './dryer-chamber-data.controller';
 import { DryerChamberDataService } from './dryer-chamber-data.service';
 import { SequelizeModule } from '@nestjs/sequelize';
@@ -29,12 +29,13 @@ import { WoodShipmentModule } from 'src/wood-shipment/wood-shipment.module';
     ]),
     WoodClassModule,
     DimensionModule,
-    DryerChamberModule,
+    forwardRef(() => DryerChamberModule),
     WoodTypeModule,
     WoodArrivalModule,
     WoodConditionModule,
     WarehouseModule,
     WoodShipmentModule,
   ],
+  exports: [DryerChamberDataService],
 })
 export class DryerChamberDataModule {}

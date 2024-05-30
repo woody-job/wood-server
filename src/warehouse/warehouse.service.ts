@@ -288,11 +288,12 @@ export class WarehouseService {
       await this.woodConditionService.getAllWoodConditions();
     const woodClasses = await this.woodClassService.getAllWoodClasses();
 
-    const output = {};
-    let resultVolume = 0;
+    let output = [];
 
     await Promise.all(
       woodConditions.map(async (woodCondition) => {
+        let resultWoodConditionVolume = 0;
+
         const woodByWoodConditionInWarehouse =
           await this.warehouseRepository.findAll({
             where: { woodConditionId: woodCondition.id },
@@ -319,18 +320,32 @@ export class WarehouseService {
             0,
           );
 
-          resultVolume += totalVolume;
+          resultWoodConditionVolume += totalVolume;
 
           innerOutput[woodClass.name] = Number(totalVolume.toFixed(4));
         });
 
-        output[woodCondition.name] = innerOutput;
+        output.push({
+          woodConditionId: woodCondition.id,
+          woodConditionName: woodCondition.name,
+          sorts: innerOutput,
+          totalVolume: Number(resultWoodConditionVolume.toFixed(4)),
+        });
       }),
     );
 
-    return {
-      data: output,
-      total: Number(resultVolume.toFixed(4)),
-    };
+    output = output.sort((a, b) => {
+      if (a.woodConditionId > b.woodConditionId) {
+        return 1;
+      }
+
+      if (a.woodConditionId < b.woodConditionId) {
+        return -1;
+      }
+
+      return 0;
+    });
+
+    return output;
   }
 }

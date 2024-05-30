@@ -47,12 +47,17 @@ import { Warehouse } from './warehouse/warehouse.model';
       envFilePath: `.${process.env.NODE_ENV}.env`,
     }),
     SequelizeModule.forRoot({
+      name: 'default',
       dialect: 'postgres',
       host: process.env.POSTGRES_HOST,
       port: Number(process.env.POSTGRES_PORT),
       username: process.env.POSTGRES_USER,
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DATABASE,
+      // Отключать при start:dev
+      dialectOptions: {
+        ssl: true,
+      },
       pool: {
         max: 10,
         min: 0,
