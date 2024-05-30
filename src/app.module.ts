@@ -53,6 +53,12 @@ import { Warehouse } from './warehouse/warehouse.model';
       username: process.env.POSTGRES_USER,
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DATABASE,
+      pool: {
+        max: 10,
+        min: 0,
+        acquire: 30 * 1000,
+        idle: 10 * 1000,
+      },
       models: [
         User,
         Role,
