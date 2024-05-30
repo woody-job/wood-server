@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DryerChamberData } from './dryer-chamber-data.model';
 import { DimensionService } from 'src/dimension/dimension.service';
@@ -21,6 +27,7 @@ export class DryerChamberDataService {
     private dryerChamberDataRepository: typeof DryerChamberData,
     private dimensionService: DimensionService,
     private woodClassService: WoodClassService,
+    @Inject(forwardRef(() => DryerChamberService))
     private dryerChamberService: DryerChamberService,
     private woodTypeService: WoodTypeService,
     private woodArrivalService: WoodArrivalService,
@@ -399,11 +406,12 @@ export class DryerChamberDataService {
     const dryers = await this.dryerChamberService.getAllDryerChambers();
     const woodClasses = await this.woodClassService.getAllWoodClasses();
 
-    const output = {};
-    let resultVolume = 0;
+    let output = [];
 
     await Promise.all(
       dryers.map(async (dryerChamber) => {
+        let resultDryerVolume = 0;
+
         const woodByDryerChamber =
           await this.dryerChamberDataRepository.findAll({
             where: { dryerChamberId: dryerChamber.id, isDrying: true },
@@ -429,19 +437,33 @@ export class DryerChamberDataService {
             0,
           );
 
-          resultVolume += totalVolume;
+          resultDryerVolume += totalVolume;
 
           innerOutput[woodClass.name] = Number(totalVolume.toFixed(4));
         });
 
-        output[dryerChamber.name] = innerOutput;
+        output.push({
+          dryerId: dryerChamber.id,
+          dryerName: dryerChamber.name,
+          sorts: innerOutput,
+          totalVolume: Number(resultDryerVolume.toFixed(4)),
+        });
       }),
     );
 
-    return {
-      data: output,
-      total: Number(resultVolume.toFixed(4)),
-    };
+    output = output.sort((a, b) => {
+      if (a.dryerId > b.dryerId) {
+        return 1;
+      }
+
+      if (a.dryerId < b.dryerId) {
+        return -1;
+      }
+
+      return 0;
+    });
+
+    return output;
   }
 
   async getChamberData(dryerChamberId: number) {
@@ -494,5 +516,23 @@ export class DryerChamberDataService {
       data: dryerChamberData && woodClass ? [data] : [],
       total: dimensionVolume,
     };
+  }
+
+  async getAllChamberData(dryerChamberId: number) {
+    const dryerChamber =
+      await this.dryerChamberService.findDryerChamberById(dryerChamberId);
+
+    if (!dryerChamber) {
+      throw new HttpException(
+        'Выбранная сушильная камера не найдена',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const dryerChamberData = await this.dryerChamberDataRepository.findAll({
+      where: { dryerChamberId },
+    });
+
+    return dryerChamberData;
   }
 }

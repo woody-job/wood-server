@@ -1,13 +1,22 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DryerChamber } from './dryer-chamber.model';
 import { CreateDryerChamberDto } from './dtos/create-dryer-chamber.dto';
+import { DryerChamberDataService } from 'src/dryer-chamber-data/dryer-chamber-data.service';
 
 @Injectable()
 export class DryerChamberService {
   constructor(
     @InjectModel(DryerChamber)
     private dryerChamberRepository: typeof DryerChamber,
+    @Inject(forwardRef(() => DryerChamberDataService))
+    private dryerChamberDataService: DryerChamberDataService,
   ) {}
 
   async createDryerChamber(dryerChamberDto: CreateDryerChamberDto) {
@@ -71,6 +80,17 @@ export class DryerChamberService {
       throw new HttpException(
         'Сушильная камера не найдена',
         HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const recordsForChamber =
+      await this.dryerChamberDataService.getAllChamberData(dryerChamberId);
+
+    if (recordsForChamber) {
+      await Promise.all(
+        recordsForChamber.map(async (record) => {
+          await this.dryerChamberDataService.eraseRecord(record.id);
+        }),
       );
     }
 

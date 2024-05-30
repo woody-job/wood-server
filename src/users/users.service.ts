@@ -68,6 +68,15 @@ export class UsersService {
       throw new HttpException('Пользователь не найден', HttpStatus.NOT_FOUND);
     }
 
+    const allUsers = await this.userRepository.findAll();
+
+    if (allUsers.length === 1) {
+      throw new HttpException(
+        'Нельзя удалить последнего пользователя',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     await user.destroy();
   }
 
