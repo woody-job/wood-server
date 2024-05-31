@@ -55,9 +55,9 @@ import { Warehouse } from './warehouse/warehouse.model';
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DATABASE,
       // Отключать при start:dev
-      dialectOptions: {
-        ssl: true,
-      },
+      // dialectOptions: {
+      //   ssl: true,
+      // },
       pool: {
         max: 10,
         min: 0,
