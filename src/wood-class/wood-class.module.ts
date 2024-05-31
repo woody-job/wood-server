@@ -10,6 +10,7 @@ import { WorkshopOut } from 'src/workshop-out/workshop-out.model';
 import { WoodArrival } from 'src/wood-arrival/wood-arrival.model';
 import { WoodShipment } from 'src/wood-shipment/wood-shipment.model';
 import { Warehouse } from 'src/warehouse/warehouse.model';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   providers: [WoodClassService],
@@ -25,6 +26,7 @@ import { Warehouse } from 'src/warehouse/warehouse.model';
       WoodShipment,
       Warehouse,
     ]),
+    AuthModule,
   ],
   exports: [WoodClassService],
 })

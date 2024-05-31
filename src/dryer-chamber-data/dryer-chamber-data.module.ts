@@ -15,6 +15,7 @@ import { WoodArrivalModule } from 'src/wood-arrival/wood-arrival.module';
 import { WoodConditionModule } from 'src/wood-condition/wood-condition.module';
 import { WarehouseModule } from 'src/warehouse/warehouse.module';
 import { WoodShipmentModule } from 'src/wood-shipment/wood-shipment.module';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   controllers: [DryerChamberDataController],
@@ -35,6 +36,7 @@ import { WoodShipmentModule } from 'src/wood-shipment/wood-shipment.module';
     WoodConditionModule,
     WarehouseModule,
     WoodShipmentModule,
+    AuthModule,
   ],
   exports: [DryerChamberDataService],
 })

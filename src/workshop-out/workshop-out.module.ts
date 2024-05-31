@@ -18,6 +18,7 @@ import { WoodArrivalModule } from 'src/wood-arrival/wood-arrival.module';
 import { WarehouseModule } from 'src/warehouse/warehouse.module';
 import { BeamInModule } from 'src/beam-in/beam-in.module';
 import { WorkshopDailyDataModule } from 'src/workshop-daily-data/workshop-daily-data.module';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   controllers: [WorkshopOutController],
@@ -41,6 +42,7 @@ import { WorkshopDailyDataModule } from 'src/workshop-daily-data/workshop-daily-
     WarehouseModule,
     BeamInModule,
     forwardRef(() => WorkshopDailyDataModule),
+    AuthModule,
   ],
   exports: [WorkshopOutService],
 })

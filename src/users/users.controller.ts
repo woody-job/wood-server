@@ -6,11 +6,14 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UsersService } from './users.service';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { User } from './users.model';
+import { Roles } from 'src/auth/roles-auth.decorator';
+import { RolesGuard } from 'src/auth/roles.guard';
 
 @ApiTags('Пользователи')
 @Controller('users')
@@ -33,6 +36,8 @@ export class UsersController {
 
   @ApiOperation({ summary: 'Удаление пользователя' })
   @ApiResponse({ status: 200 })
+  @Roles('SUPERADMIN')
+  @UseGuards(RolesGuard)
   @Delete('/:id')
   delete(@Param('id') id: string) {
     return this.usersService.deleteUser(Number(id));
@@ -40,6 +45,8 @@ export class UsersController {
 
   @ApiOperation({ summary: 'Получение списка всех пользователей' })
   @ApiResponse({ status: 200, type: [User] })
+  @Roles('SUPERADMIN')
+  @UseGuards(RolesGuard)
   @Get('/list')
   getAll() {
     return this.usersService.getAllUsers();
