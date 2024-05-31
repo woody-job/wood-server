@@ -740,7 +740,7 @@ export class WorkshopOutService {
     const workshops = await this.workshopService.getAllWorkshops();
     const woodClasses = await this.woodClassService.getAllWoodClasses();
 
-    const output = {};
+    let output = [];
 
     await Promise.all(
       workshops.map(async (workshop) => {
@@ -801,11 +801,77 @@ export class WorkshopOutService {
           }),
         );
 
-        output[workshop.name] = workshopOutput;
+        output.push({
+          workshopId: workshop.id,
+          workshopName: workshop.name,
+          woods: workshopOutput.sort((a, b) => {
+            const momentFirstDate = moment(a.date);
+            const momentSecondDate = moment(b.date);
+
+            const difference = momentFirstDate.diff(momentSecondDate, 'days');
+
+            if (difference > 1) {
+              return 1;
+            }
+
+            if (difference < 0) {
+              return -1;
+            }
+
+            return 0;
+          }),
+        });
       }),
     );
 
-    return output;
+    output = await Promise.all(
+      output.map(async (workshopOutput) => {
+        let lastWorkingDay = moment().subtract(1, 'days');
+
+        // Если последний день - воскресенье, то берем субботу - последний рабочий день недели
+        if (lastWorkingDay.day() === 7) {
+          lastWorkingDay = moment().subtract(2, 'days');
+        }
+
+        const beamInForLastWorkingDay =
+          await this.beanInService.getAllBeamInForWorkshop({
+            workshopId: workshopOutput.workshopId,
+            startDate: lastWorkingDay.toISOString(),
+            endDate: lastWorkingDay.toISOString(),
+          });
+
+        const totalBeamInVolume = beamInForLastWorkingDay.totalVolume;
+
+        const dailyStatsForLastWorkingDay =
+          await this.workshopDailyDataService.getDailyStatsForWorkshop(
+            workshopOutput.workshopId,
+            lastWorkingDay.toISOString(),
+          );
+
+        const profitPerUnit = dailyStatsForLastWorkingDay.profitPerUnit;
+
+        return {
+          ...workshopOutput,
+          lastWorkingDayStats: {
+            date: lastWorkingDay.toISOString(),
+            totalBeamInVolume,
+            profitPerUnit,
+          },
+        };
+      }),
+    );
+
+    return output.sort((a, b) => {
+      if (a.workshopId > b.workshopId) {
+        return 1;
+      }
+
+      if (a.workshopId < b.workshopId) {
+        return -1;
+      }
+
+      return 0;
+    });
   }
 
   async getWorkshopsStatsByTimespan({
