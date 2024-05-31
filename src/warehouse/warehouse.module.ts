@@ -11,6 +11,7 @@ import { WoodConditionModule } from 'src/wood-condition/wood-condition.module';
 import { WoodType } from 'src/wood-type/wood-type.model';
 import { WoodTypeModule } from 'src/wood-type/wood-type.module';
 import { Warehouse } from './warehouse.model';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   providers: [WarehouseService],
@@ -27,6 +28,7 @@ import { Warehouse } from './warehouse.model';
     WoodTypeModule,
     DimensionModule,
     WoodConditionModule,
+    AuthModule,
   ],
   exports: [WarehouseService],
 })

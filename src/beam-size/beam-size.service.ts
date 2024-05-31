@@ -78,7 +78,9 @@ export class BeamSizeService {
   }
 
   async getAllBeamSizes() {
-    const beamSizes = await this.beamSizeRepository.findAll();
+    const beamSizes = await this.beamSizeRepository.findAll({
+      order: [['id', 'ASC']],
+    });
 
     return beamSizes;
   }

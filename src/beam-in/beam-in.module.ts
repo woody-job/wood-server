@@ -7,6 +7,7 @@ import { Workshop } from 'src/workshop/workshop.model';
 import { WorkshopModule } from 'src/workshop/workshop.module';
 import { BeamSize } from 'src/beam-size/beam-size.model';
 import { BeamSizeModule } from 'src/beam-size/beam-size.module';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   controllers: [BeamInController],
@@ -15,6 +16,7 @@ import { BeamSizeModule } from 'src/beam-size/beam-size.module';
     SequelizeModule.forFeature([BeamIn, Workshop, BeamSize]),
     WorkshopModule,
     BeamSizeModule,
+    AuthModule,
   ],
   exports: [BeamInService],
 })

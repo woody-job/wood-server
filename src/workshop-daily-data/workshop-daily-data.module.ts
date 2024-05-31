@@ -10,6 +10,7 @@ import { WorkshopModule } from 'src/workshop/workshop.module';
 import { DimensionModule } from 'src/dimension/dimension.module';
 import { WorkshopOutModule } from 'src/workshop-out/workshop-out.module';
 import { BeamInModule } from 'src/beam-in/beam-in.module';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   providers: [WorkshopDailyDataService],
@@ -21,6 +22,7 @@ import { BeamInModule } from 'src/beam-in/beam-in.module';
     DimensionModule,
     forwardRef(() => WorkshopOutModule),
     BeamInModule,
+    AuthModule,
   ],
   exports: [WorkshopDailyDataService],
 })

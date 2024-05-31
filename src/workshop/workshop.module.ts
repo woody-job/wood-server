@@ -7,6 +7,7 @@ import { WorkshopWoodPrice } from 'src/workshop-wood-prices/workshop-wood-price.
 import { BeamIn } from 'src/beam-in/beam-in.model';
 import { WorkshopDailyData } from 'src/workshop-daily-data/workshop-daily-data.model';
 import { WorkshopOut } from 'src/workshop-out/workshop-out.model';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   controllers: [WorkshopController],
@@ -19,6 +20,7 @@ import { WorkshopOut } from 'src/workshop-out/workshop-out.model';
       WorkshopDailyData,
       WorkshopOut,
     ]),
+    AuthModule,
   ],
   exports: [WorkshopService],
 })

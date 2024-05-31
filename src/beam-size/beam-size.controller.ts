@@ -6,10 +6,13 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { CreateBeamSizeDto } from './dtos/create-beam-size.dto';
 import { BeamSizeService } from './beam-size.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Roles } from 'src/auth/roles-auth.decorator';
+import { RolesGuard } from 'src/auth/roles.guard';
 
 @ApiTags('Размеры леса')
 @Controller('beam-size')
@@ -38,6 +41,8 @@ export class BeamSizeController {
   }
 
   @ApiOperation({ summary: 'Получение списка всех размеров леса' })
+  @Roles('SUPERADMIN', 'ADMIN', 'USER')
+  @UseGuards(RolesGuard)
   @Get('/list')
   getAll() {
     return this.beamSizeService.getAllBeamSizes();

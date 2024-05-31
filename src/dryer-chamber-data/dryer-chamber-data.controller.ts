@@ -1,7 +1,17 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { DryerChamberDataService } from './dryer-chamber-data.service';
 import { CreateDryerChamberDataDto } from './dtos/create-dryer-chamber-data.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Roles } from 'src/auth/roles-auth.decorator';
+import { RolesGuard } from 'src/auth/roles.guard';
 
 @ApiTags('Сушильные камеры')
 @Controller('dryer-chamber-data')
@@ -11,6 +21,8 @@ export class DryerChamberDataController {
   @ApiOperation({
     summary: 'Получение сохнущей доски в сушилке',
   })
+  @Roles('SUPERADMIN', 'ADMIN', 'USER')
+  @UseGuards(RolesGuard)
   @Get('/list/:dryerChamberId')
   getDryingById(@Param('dryerChamberId') dryerChamberId: string) {
     return this.dryerChamberDataService.getDryingWoodByDryerChamberId(
@@ -22,6 +34,8 @@ export class DryerChamberDataController {
   @ApiOperation({
     summary: 'Получение сохнущей доски во всех сушилках',
   })
+  @Roles('SUPERADMIN', 'ADMIN', 'USER')
+  @UseGuards(RolesGuard)
   @Get('/list')
   getDrying() {
     return this.dryerChamberDataService.getAllDryingWood();
@@ -31,6 +45,8 @@ export class DryerChamberDataController {
   @ApiOperation({
     summary: 'Получение всех записей о доске в сушилках',
   })
+  @Roles('SUPERADMIN', 'ADMIN', 'USER')
+  @UseGuards(RolesGuard)
   @Get('/all-records')
   getAll() {
     return this.dryerChamberDataService.getAllRecords();
@@ -39,6 +55,8 @@ export class DryerChamberDataController {
   @ApiOperation({
     summary: 'Получение свода по сушилкам для статистики',
   })
+  @Roles('SUPERADMIN', 'ADMIN', 'USER')
+  @UseGuards(RolesGuard)
   @Get('/get/stats')
   getStats() {
     return this.dryerChamberDataService.getOverallDryersStats();
@@ -47,6 +65,8 @@ export class DryerChamberDataController {
   @ApiOperation({
     summary: 'Получение данных по сушилке для ее санберста',
   })
+  @Roles('SUPERADMIN', 'ADMIN', 'USER')
+  @UseGuards(RolesGuard)
   @Get('/get/chamber-data/:dryerChamberId')
   getChamberData(@Param('dryerChamberId') dryerChamberId: string) {
     return this.dryerChamberDataService.getChamberData(Number(dryerChamberId));
@@ -55,6 +75,8 @@ export class DryerChamberDataController {
   @ApiOperation({
     summary: 'Занесение доски в сушилку',
   })
+  @Roles('SUPERADMIN', 'ADMIN')
+  @UseGuards(RolesGuard)
   @Post('/bring-in/:dryerChamberId')
   bringIn(
     @Param('dryerChamberId') dryerChamberId: string,
@@ -69,6 +91,8 @@ export class DryerChamberDataController {
   @ApiOperation({
     summary: 'Вынос доски из сушилки',
   })
+  @Roles('SUPERADMIN', 'ADMIN')
+  @UseGuards(RolesGuard)
   @Post('/take-out/:dryerChamberId')
   takeOut(@Param('dryerChamberId') dryerChamberId: string) {
     return this.dryerChamberDataService.removeWoodFromChamber(
@@ -76,6 +100,7 @@ export class DryerChamberDataController {
     );
   }
 
+  // В ui нет такого запроса
   @ApiOperation({
     summary: 'Удаление записи о доске в сушилке',
   })

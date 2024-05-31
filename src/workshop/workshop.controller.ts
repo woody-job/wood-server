@@ -6,10 +6,13 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { WorkshopService } from './workshop.service';
 import { CreateWorkshopDto } from './dtos/create-workshop.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Roles } from 'src/auth/roles-auth.decorator';
+import { RolesGuard } from 'src/auth/roles.guard';
 
 @ApiTags('Цеха')
 @Controller('workshop')
@@ -38,6 +41,8 @@ export class WorkshopController {
   @ApiOperation({
     summary: 'Получение списка всех цехов',
   })
+  @Roles('SUPERADMIN', 'ADMIN', 'USER')
+  @UseGuards(RolesGuard)
   @Get('/list')
   getAll() {
     return this.workshopService.getAllWorkshops();

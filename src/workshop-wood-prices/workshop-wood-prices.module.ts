@@ -10,6 +10,7 @@ import { WoodClassModule } from 'src/wood-class/wood-class.module';
 import { DimensionModule } from 'src/dimension/dimension.module';
 import { WorkshopModule } from 'src/workshop/workshop.module';
 import { WorkshopOut } from 'src/workshop-out/workshop-out.model';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   providers: [WorkshopWoodPricesService],
@@ -25,6 +26,7 @@ import { WorkshopOut } from 'src/workshop-out/workshop-out.model';
     WoodClassModule,
     DimensionModule,
     WorkshopModule,
+    AuthModule,
   ],
   exports: [WorkshopWoodPricesService],
 })

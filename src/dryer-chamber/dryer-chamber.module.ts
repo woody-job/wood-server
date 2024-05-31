@@ -5,6 +5,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { DryerChamber } from './dryer-chamber.model';
 import { DryerChamberData } from 'src/dryer-chamber-data/dryer-chamber-data.model';
 import { DryerChamberDataModule } from 'src/dryer-chamber-data/dryer-chamber-data.module';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   controllers: [DryerChamberController],
@@ -12,6 +13,7 @@ import { DryerChamberDataModule } from 'src/dryer-chamber-data/dryer-chamber-dat
   imports: [
     SequelizeModule.forFeature([DryerChamber, DryerChamberData]),
     forwardRef(() => DryerChamberDataModule),
+    AuthModule,
   ],
   exports: [DryerChamberService],
 })

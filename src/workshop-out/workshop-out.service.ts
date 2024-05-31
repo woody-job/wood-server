@@ -916,7 +916,7 @@ export class WorkshopOutService {
 
     const woodClasses = await this.woodClassService.getAllWoodClasses();
 
-    const workshopOutput = [];
+    let workshopOutput = [];
 
     // TODO: Не нужно мапить дни. Надо сделать как в одноименном методе в beam-in.service. И не забыть отсортировать и сгруппировать по дате, как
     // в getProfitStatsByTimespan в этом файле
@@ -973,6 +973,23 @@ export class WorkshopOutService {
         workshopOutput.push(dayOutput);
       }),
     );
+
+    workshopOutput = workshopOutput.sort((a, b) => {
+      const momentFirstDate = moment(a.date);
+      const momentSecondDate = moment(b.date);
+
+      const difference = momentFirstDate.diff(momentSecondDate, 'days');
+
+      if (difference > 1) {
+        return 1;
+      }
+
+      if (difference < 0) {
+        return -1;
+      }
+
+      return 0;
+    });
 
     return workshopOutput;
   }
