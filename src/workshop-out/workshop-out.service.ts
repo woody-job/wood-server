@@ -1374,8 +1374,12 @@ export class WorkshopOutService {
         outputItem.dimension = dimensionOfTheDay;
 
         // Важное условие для второго цеха
-        outputItem.totalBeamInVolume =
-          workshop.id === 2 ? totalWorkshopOutVolume * 2 : totalBeamInVolume;
+        outputItem.totalBeamInVolume = Number(
+          (workshop.id === 2
+            ? totalWorkshopOutVolume * 2
+            : totalBeamInVolume
+          ).toFixed(2),
+        );
         outputItem.totalWorkshopOutPercentage =
           workshop.id === 2
             ? totalWorkshopOutPercentageForSecondWorkshop
