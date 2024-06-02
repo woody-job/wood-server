@@ -39,7 +39,10 @@ export class WorkshopOutService {
     private woodArrivalService: WoodArrivalService,
     private woodConditionService: WoodConditionService,
     private warehouseService: WarehouseService,
-    private beanInService: BeamInService,
+
+    @Inject(forwardRef(() => BeamInService))
+    private beamInService: BeamInService,
+
     @Inject(forwardRef(() => WorkshopDailyDataService))
     private workshopDailyDataService: WorkshopDailyDataService,
   ) {}
@@ -516,6 +519,12 @@ export class WorkshopOutService {
       );
     }
 
+    const workshop = await this.workshopService.findWorkshopById(workshopId);
+
+    if (!workshop) {
+      throw new HttpException('Выбранный цех не найден', HttpStatus.NOT_FOUND);
+    }
+
     const momentDate = moment(date);
 
     const year = momentDate.year();
@@ -541,7 +550,7 @@ export class WorkshopOutService {
     });
 
     const { totalVolume: totalBeamInVolume } =
-      await this.beanInService.getAllBeamInForWorkshop({
+      await this.beamInService.getAllBeamInForWorkshop({
         workshopId,
         startDate: date,
         endDate: date,
@@ -574,7 +583,11 @@ export class WorkshopOutService {
         workshopOut.dimension.volume * workshopOut.amount;
     });
 
-    const trashVolume = totalBeamInVolume - totalWorkshopOutVolume;
+    let trashVolume = totalBeamInVolume - totalWorkshopOutVolume;
+
+    if (workshop.id === 2) {
+      trashVolume = totalWorkshopOutVolume * 2 - totalWorkshopOutVolume;
+    }
 
     return {
       data: workshopOuts,
@@ -642,7 +655,17 @@ export class WorkshopOutService {
       // order: [['date', 'DESC']],
     });
 
-    return workshopOuts;
+    let totalWorkshopOutVolume = 0;
+
+    workshopOuts.forEach((workshopOut) => {
+      totalWorkshopOutVolume +=
+        workshopOut.dimension.volume * workshopOut.amount;
+    });
+
+    return {
+      data: workshopOuts,
+      totalWorkshopOutVolume: Number(totalWorkshopOutVolume.toFixed(2)),
+    };
   }
 
   async deleteWorkshopOutFromWorkshop(workshopOutId: number) {
@@ -834,13 +857,25 @@ export class WorkshopOutService {
         }
 
         const beamInForLastWorkingDay =
-          await this.beanInService.getAllBeamInForWorkshop({
+          await this.beamInService.getAllBeamInForWorkshop({
             workshopId: workshopOutput.workshopId,
             startDate: lastWorkingDay.toISOString(),
             endDate: lastWorkingDay.toISOString(),
           });
 
-        const totalBeamInVolume = beamInForLastWorkingDay.totalVolume;
+        let totalBeamInVolume = beamInForLastWorkingDay.totalVolume;
+
+        // Важное условие для второго цеха
+        if (workshopOutput.workhopId === 2) {
+          const { totalWorkshopOutVolume } =
+            await this.getAllWoodOutForWorkshopForMultipleDays({
+              workshopId: workshopOutput.workshopId,
+              startDate: lastWorkingDay.toISOString(),
+              endDate: lastWorkingDay.toISOString(),
+            });
+
+          totalBeamInVolume = totalWorkshopOutVolume * 2;
+        }
 
         const dailyStatsForLastWorkingDay =
           await this.workshopDailyDataService.getDailyStatsForWorkshop(
@@ -1144,11 +1179,12 @@ export class WorkshopOutService {
       );
     }
 
-    const workshopOuts = await this.getAllWoodOutForWorkshopForMultipleDays({
-      workshopId,
-      startDate,
-      endDate,
-    });
+    const { data: workshopOuts } =
+      await this.getAllWoodOutForWorkshopForMultipleDays({
+        workshopId,
+        startDate,
+        endDate,
+      });
 
     const workshopWoodPrices = workshop.workshopWoodPrices;
 
@@ -1301,7 +1337,7 @@ export class WorkshopOutService {
           });
 
         const { totalVolume: totalBeamInVolume } =
-          await this.beanInService.getAllBeamInForWorkshop({
+          await this.beamInService.getAllBeamInForWorkshop({
             workshopId,
             startDate: dayDate,
             endDate: dayDate,
@@ -1325,6 +1361,13 @@ export class WorkshopOutService {
           ((totalWorkshopOutVolume / totalBeamInVolume) * 100).toFixed(2),
         );
 
+        const totalWorkshopOutPercentageForSecondWorkshop = Number(
+          (
+            (totalWorkshopOutVolume / (totalWorkshopOutVolume * 2)) *
+            100
+          ).toFixed(2),
+        );
+
         outputItem.id = moment(dayDate).date() + moment(dayDate).month();
         outputItem.date = dayDate;
         outputItem.woodNaming = woodNamingOfTheDay;
@@ -1332,11 +1375,11 @@ export class WorkshopOutService {
 
         // Важное условие для второго цеха
         outputItem.totalBeamInVolume =
-          workshop.name === 'Цех 2'
-            ? totalWorkshopOutVolume * 2
-            : totalBeamInVolume;
-        outputItem.totalWorkshopOutPercentage = totalWorkshopOutPercentage;
-
+          workshop.id === 2 ? totalWorkshopOutVolume * 2 : totalBeamInVolume;
+        outputItem.totalWorkshopOutPercentage =
+          workshop.id === 2
+            ? totalWorkshopOutPercentageForSecondWorkshop
+            : totalWorkshopOutPercentage;
         outputItem.totalWoodPrice = totalWoodPrice;
         outputItem.priceOfRawMaterials = priceOfRawMaterials;
         outputItem.sawingPrice = sawingPrice;
@@ -1363,8 +1406,11 @@ export class WorkshopOutService {
             0,
           );
 
+          const localTotalBeamInVolume =
+            workshop.id === 2 ? totalWorkshopOutVolume * 2 : totalBeamInVolume;
+
           const percentageForCurrentWoodClassFromTotalVolume =
-            (currentWoodClassVolume / totalBeamInVolume) * 100;
+            (currentWoodClassVolume / localTotalBeamInVolume) * 100;
 
           let woodClassKey = '';
 

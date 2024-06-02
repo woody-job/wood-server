@@ -40,7 +40,7 @@ import { AuthModule } from 'src/auth/auth.module';
     DimensionModule,
     WoodArrivalModule,
     WarehouseModule,
-    BeamInModule,
+    forwardRef(() => BeamInModule),
     forwardRef(() => WorkshopDailyDataModule),
     AuthModule,
   ],
