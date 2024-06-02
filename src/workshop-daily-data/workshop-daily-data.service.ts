@@ -274,7 +274,16 @@ export class WorkshopDailyDataService {
     output.profitPerUnit = output.profit / totalVolume;
 
     if (workshop.id === 2) {
-      output.priceOfRawMaterials = totalVolume * 2 * 2500;
+      // Объем выхода умноженный на 2 - объем выхода из второго цеха
+      const calculatedPriceOfRawMaterials =
+        totalVolume * 2 * workshop.priceOfRawMaterials;
+
+      output.priceOfRawMaterials = calculatedPriceOfRawMaterials;
+      output.profit =
+        output.totalWoodPrice -
+        calculatedPriceOfRawMaterials -
+        output.sawingPrice;
+      output.profitPerUnit = output.profit / totalVolume;
     }
 
     return {
