@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { BeamInController } from './beam-in.controller';
 import { BeamInService } from './beam-in.service';
 import { SequelizeModule } from '@nestjs/sequelize';
@@ -8,6 +8,7 @@ import { WorkshopModule } from 'src/workshop/workshop.module';
 import { BeamSize } from 'src/beam-size/beam-size.model';
 import { BeamSizeModule } from 'src/beam-size/beam-size.module';
 import { AuthModule } from 'src/auth/auth.module';
+import { WorkshopOutModule } from 'src/workshop-out/workshop-out.module';
 
 @Module({
   controllers: [BeamInController],
@@ -17,6 +18,7 @@ import { AuthModule } from 'src/auth/auth.module';
     WorkshopModule,
     BeamSizeModule,
     AuthModule,
+    forwardRef(() => WorkshopOutModule),
   ],
   exports: [BeamInService],
 })

@@ -21,7 +21,7 @@ import { AuthModule } from 'src/auth/auth.module';
     WorkshopModule,
     DimensionModule,
     forwardRef(() => WorkshopOutModule),
-    BeamInModule,
+    forwardRef(() => BeamInModule),
     AuthModule,
   ],
   exports: [WorkshopDailyDataService],

@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { WorkshopDailyData } from './workshop-daily-data.model';
 import { WorkshopService } from 'src/workshop/workshop.service';
@@ -22,7 +28,9 @@ export class WorkshopDailyDataService {
     private workshopService: WorkshopService,
     private woodNamingService: WoodNamingService,
     private dimensionService: DimensionService,
+    @Inject(forwardRef(() => WorkshopOutService))
     private workshopOutService: WorkshopOutService,
+    @Inject(forwardRef(() => BeamInService))
     private beamInService: BeamInService,
   ) {}
 
@@ -265,6 +273,10 @@ export class WorkshopDailyDataService {
       output.totalWoodPrice - output.priceOfRawMaterials - output.sawingPrice;
     output.profitPerUnit = output.profit / totalVolume;
 
+    if (workshop.id === 2) {
+      output.priceOfRawMaterials = totalVolume * 2 * 2500;
+    }
+
     return {
       totalWoodPrice: Number(output.totalWoodPrice.toFixed(2)),
       priceOfRawMaterials: Number(output.priceOfRawMaterials.toFixed(2)),
@@ -275,6 +287,7 @@ export class WorkshopDailyDataService {
         : 0,
       dimensionOfTheDay: output.dimensionOfTheDay,
       woodNamingOfTheDay: output.woodNamingOfTheDay,
+      totalVolume,
     };
   }
 }

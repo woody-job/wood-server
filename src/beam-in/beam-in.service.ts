@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { BeamIn } from './beam-in.model';
 import { WorkshopService } from 'src/workshop/workshop.service';
@@ -9,6 +15,7 @@ import * as moment from 'moment';
 import { BeamSizeService } from 'src/beam-size/beam-size.service';
 import { BeamSize } from 'src/beam-size/beam-size.model';
 import { UpdateBeamInDto } from './dtos/update-beam-in.dto';
+import { WorkshopOutService } from 'src/workshop-out/workshop-out.service';
 
 @Injectable()
 export class BeamInService {
@@ -17,6 +24,8 @@ export class BeamInService {
     private beamInRepository: typeof BeamIn,
     private workshopService: WorkshopService,
     private beamSizeService: BeamSizeService,
+    @Inject(forwardRef(() => WorkshopOutService))
+    private workshopOutService: WorkshopOutService,
   ) {}
 
   async addBeamToWorkshop(beamInDto: AddBeamInDto) {
@@ -256,6 +265,54 @@ export class BeamInService {
         y: volume,
       });
     });
+
+    if (workshop.id === 2) {
+      console.log(`\n THIS IS TRUE \n`);
+
+      const { data: workshopOuts } =
+        await this.workshopOutService.getAllWoodOutForWorkshopForMultipleDays({
+          workshopId,
+          startDate,
+          endDate,
+        });
+
+      console.log(`\n THIS IS TRUE TOO ${workshopOuts} \n`);
+
+      workshopOuts.forEach((workshopOut) => {
+        const volume = Number(
+          (workshopOut.dimension.volume * 2 * workshopOut.amount).toFixed(2), // Все условие со вторым цехов нужно для этого момента. Объем входа для второго цеха = выход * 2
+        );
+
+        const beamInDate = moment(workshopOut.date);
+        const beamInYear = beamInDate.year();
+        const beamInMonth = beamInDate.month() + 1;
+        const beamInDay = beamInDate.date();
+
+        const outputWithSameDate = output.find((outputItem) => {
+          const outputItemDate = moment(outputItem.x);
+          const outputItemYear = outputItemDate.year();
+          const outputItemMonth = outputItemDate.month() + 1;
+          const outputItemDay = outputItemDate.date();
+
+          return (
+            beamInYear === outputItemYear &&
+            beamInMonth === outputItemMonth &&
+            beamInDay === outputItemDay
+          );
+        });
+
+        if (outputWithSameDate) {
+          outputWithSameDate.y += volume;
+
+          return;
+        }
+
+        output.push({
+          x: workshopOut.date,
+          y: volume,
+        });
+      });
+    }
 
     return output;
   }
