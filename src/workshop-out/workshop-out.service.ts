@@ -856,27 +856,6 @@ export class WorkshopOutService {
           lastWorkingDay = moment().subtract(2, 'days');
         }
 
-        const beamInForLastWorkingDay =
-          await this.beamInService.getAllBeamInForWorkshop({
-            workshopId: workshopOutput.workshopId,
-            startDate: lastWorkingDay.toISOString(),
-            endDate: lastWorkingDay.toISOString(),
-          });
-
-        let totalBeamInVolume = beamInForLastWorkingDay.totalVolume;
-
-        // Важное условие для второго цеха
-        if (workshopOutput.workhopId === 2) {
-          const { totalWorkshopOutVolume } =
-            await this.getAllWoodOutForWorkshopForMultipleDays({
-              workshopId: workshopOutput.workshopId,
-              startDate: lastWorkingDay.toISOString(),
-              endDate: lastWorkingDay.toISOString(),
-            });
-
-          totalBeamInVolume = totalWorkshopOutVolume * 2;
-        }
-
         const dailyStatsForLastWorkingDay =
           await this.workshopDailyDataService.getDailyStatsForWorkshop(
             workshopOutput.workshopId,
@@ -884,12 +863,16 @@ export class WorkshopOutService {
           );
 
         const profitPerUnit = dailyStatsForLastWorkingDay.profitPerUnit;
+        const totalBeamInVolume =
+          workshopOutput['workshopId'] === 2
+            ? dailyStatsForLastWorkingDay.totalVolume * 2
+            : dailyStatsForLastWorkingDay.totalVolume;
 
         return {
           ...workshopOutput,
           lastWorkingDayStats: {
             date: lastWorkingDay.toISOString(),
-            totalBeamInVolume,
+            totalBeamInVolume: Number(totalBeamInVolume.toFixed(2)),
             profitPerUnit,
           },
         };
