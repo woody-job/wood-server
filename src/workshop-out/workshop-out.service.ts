@@ -852,7 +852,8 @@ export class WorkshopOutService {
         let lastWorkingDay = moment().subtract(1, 'days');
 
         // Если последний день - воскресенье, то берем субботу - последний рабочий день недели
-        if (lastWorkingDay.day() === 7) {
+        // В moment по дефолту воскресенье - это первый день недели
+        if (lastWorkingDay.day() === 0) {
           lastWorkingDay = moment().subtract(2, 'days');
         }
 
