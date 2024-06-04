@@ -80,11 +80,11 @@ export class DryerChamberDataController {
   @Post('/bring-in/:dryerChamberId')
   bringIn(
     @Param('dryerChamberId') dryerChamberId: string,
-    @Body() dryerChamberDataDto: CreateDryerChamberDataDto,
+    @Body() dryerChamberDataDtos: CreateDryerChamberDataDto[],
   ) {
     return this.dryerChamberDataService.bringWoodInChamber(
       Number(dryerChamberId),
-      dryerChamberDataDto,
+      dryerChamberDataDtos,
     );
   }
 
