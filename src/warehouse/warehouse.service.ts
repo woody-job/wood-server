@@ -348,4 +348,8 @@ export class WarehouseService {
 
     return output;
   }
+
+  async deleteAllWarehouseRecords() {
+    await this.warehouseRepository.truncate();
+  }
 }

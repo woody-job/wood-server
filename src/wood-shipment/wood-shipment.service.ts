@@ -549,4 +549,8 @@ export class WoodShipmentService {
       totalVolume: Number(totalVolume.toFixed(4)),
     };
   }
+
+  async deleteAllWoodShipment() {
+    await this.woodShipmentRepository.truncate();
+  }
 }

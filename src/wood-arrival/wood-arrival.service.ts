@@ -559,4 +559,8 @@ export class WoodArrivalService {
       totalVolume: Number(totalVolume.toFixed(4)),
     };
   }
+
+  async deleteAllWoodArrival() {
+    await this.woodArrivalRepository.truncate();
+  }
 }
