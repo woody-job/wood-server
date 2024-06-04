@@ -299,4 +299,8 @@ export class WorkshopDailyDataService {
       totalVolume,
     };
   }
+
+  async deleteAllWorkshopDailyData() {
+    await this.workshopDailyDataRepository.truncate();
+  }
 }

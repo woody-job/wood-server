@@ -329,4 +329,8 @@ export class BeamInService {
 
     await beamIn.destroy();
   }
+
+  async deleteAllBeamIn() {
+    await this.beamInRepository.truncate();
+  }
 }

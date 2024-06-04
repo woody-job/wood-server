@@ -535,4 +535,8 @@ export class DryerChamberDataService {
 
     return dryerChamberData;
   }
+
+  async deleteAllDryerChamberData() {
+    await this.dryerChamberDataRepository.truncate();
+  }
 }

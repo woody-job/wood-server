@@ -1450,4 +1450,8 @@ export class WorkshopOutService {
 
     return output;
   }
+
+  async deleteAllWorkshopOut() {
+    await this.workshopOutRepository.truncate();
+  }
 }

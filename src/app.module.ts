@@ -38,10 +38,13 @@ import { WarehouseModule } from './warehouse/warehouse.module';
 import { WoodArrival } from './wood-arrival/wood-arrival.model';
 import { WoodShipment } from './wood-shipment/wood-shipment.model';
 import { Warehouse } from './warehouse/warehouse.model';
+import { DataManagementController } from './data-management/data-management.controller';
+import { DataManagementService } from './data-management/data-management.service';
+import { DataManagementModule } from './data-management/data-management.module';
 
 @Module({
-  controllers: [],
-  providers: [],
+  controllers: [DataManagementController],
+  providers: [DataManagementService],
   imports: [
     ConfigModule.forRoot({
       envFilePath: `.${process.env.NODE_ENV}.env`,
@@ -106,6 +109,7 @@ import { Warehouse } from './warehouse/warehouse.model';
     WoodArrivalModule,
     WoodShipmentModule,
     WarehouseModule,
+    DataManagementModule,
   ],
 })
 export class AppModule {}

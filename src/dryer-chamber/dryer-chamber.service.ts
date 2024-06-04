@@ -103,4 +103,8 @@ export class DryerChamberService {
 
     return dryerChamber;
   }
+
+  async deleteAllDryerChamber() {
+    await this.dryerChamberRepository.truncate({ cascade: true });
+  }
 }
