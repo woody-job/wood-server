@@ -19,7 +19,7 @@ export class WoodTypeController {
   constructor(private woodTypeService: WoodTypeService) {}
 
   @ApiOperation({ summary: 'Получение списка всех пород' })
-  @Roles('SUPERADMIN', 'ADMIN')
+  @Roles('SUPERADMIN', 'ADMIN', 'USER')
   @UseGuards(RolesGuard)
   @Get('/list')
   getAll() {
