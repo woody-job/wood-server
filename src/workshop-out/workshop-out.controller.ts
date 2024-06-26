@@ -61,16 +61,6 @@ export class WorkshopOutController {
   }
 
   @ApiOperation({
-    summary: 'Получение свода по цехам для статистики',
-  })
-  @Roles('SUPERADMIN', 'ADMIN', 'USER')
-  @UseGuards(RolesGuard)
-  @Get('/get/stats')
-  getStats() {
-    return this.workshopOutService.getOverallWorkshopsStats();
-  }
-
-  @ApiOperation({
     summary: 'Получение выхода для цеха как для чартов на странице статистики',
   })
   @Roles('SUPERADMIN', 'ADMIN', 'USER')
