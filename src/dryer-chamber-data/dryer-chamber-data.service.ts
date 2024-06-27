@@ -65,7 +65,17 @@ export class DryerChamberDataService {
       },
     });
 
-    return dryerChamberDatas;
+    let totalVolume = 0;
+
+    dryerChamberDatas.forEach((dryerChamberData) => {
+      totalVolume +=
+        dryerChamberData.dimension.volume * dryerChamberData.amount;
+    });
+
+    return {
+      data: dryerChamberDatas,
+      totalVolume: Number(totalVolume.toFixed(2)),
+    };
   }
 
   async getAllDryingWood() {
@@ -500,82 +510,6 @@ export class DryerChamberDataService {
     });
 
     return output;
-  }
-
-  async getChamberData(dryerChamberId: number) {
-    const dryerChamber =
-      await this.dryerChamberService.findDryerChamberById(dryerChamberId);
-
-    if (!dryerChamber) {
-      throw new HttpException(
-        'Выбранная сушильная камера не найдена',
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
-    const dryerChamberDatas =
-      await this.getDryingWoodByDryerChamberId(dryerChamberId);
-
-    if (!dryerChamberDatas) {
-      return {
-        data: [],
-        total: 0,
-      };
-    }
-
-    const output = [];
-    let totalVolume = 0;
-
-    await Promise.all(
-      dryerChamberDatas.map(async (dryerChamberData) => {
-        const dimensionString = dryerChamberData
-          ? `${dryerChamberData.dimension.width}x${dryerChamberData.dimension.thickness}x${dryerChamberData.dimension.length}`
-          : '';
-        const dimensionVolume = dryerChamberData
-          ? Number(
-              (
-                dryerChamberData.dimension.volume * dryerChamberData.amount
-              ).toFixed(4),
-            )
-          : 0;
-
-        const woodClass = await this.woodClassService.findWoodClassById(
-          dryerChamberData.woodClass.id,
-        );
-
-        totalVolume += dimensionVolume;
-
-        const existentOutputByWoodClass = output.find((outputItem) => {
-          return outputItem.name === woodClass.name;
-        });
-
-        if (existentOutputByWoodClass) {
-          existentOutputByWoodClass.children.push({
-            name: dimensionString,
-            size: dimensionVolume,
-          });
-
-          return;
-        }
-
-        const data = {
-          name: woodClass.name,
-          children: [
-            {
-              name: dimensionString,
-              size: dimensionVolume,
-            },
-          ],
-        };
-
-        output.push(data);
-      }),
-    );
-
-    return {
-      data: dryerChamberDatas ? output : [],
-      total: Number(totalVolume.toFixed(2)),
-    };
   }
 
   async getAllChamberData(dryerChamberId: number) {

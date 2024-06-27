@@ -63,16 +63,6 @@ export class DryerChamberDataController {
   }
 
   @ApiOperation({
-    summary: 'Получение данных по сушилке для ее санберста',
-  })
-  @Roles('SUPERADMIN', 'ADMIN', 'USER')
-  @UseGuards(RolesGuard)
-  @Get('/get/chamber-data/:dryerChamberId')
-  getChamberData(@Param('dryerChamberId') dryerChamberId: string) {
-    return this.dryerChamberDataService.getChamberData(Number(dryerChamberId));
-  }
-
-  @ApiOperation({
     summary: 'Занесение доски в сушилку',
   })
   @Roles('SUPERADMIN', 'ADMIN')
