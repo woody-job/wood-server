@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { DryerChamberDataService } from './dryer-chamber-data.service';
@@ -43,13 +44,20 @@ export class DryerChamberDataController {
 
   // Для тестирования
   @ApiOperation({
-    summary: 'Получение всех записей о доске в сушилках',
+    summary:
+      'Получение всех записей о доске в сушилках (c фильтрацией по датам)',
   })
   @Roles('SUPERADMIN', 'ADMIN', 'USER')
   @UseGuards(RolesGuard)
   @Get('/all-records')
-  getAll() {
-    return this.dryerChamberDataService.getAllRecords();
+  getAll(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    return this.dryerChamberDataService.getAllRecords({
+      startDate,
+      endDate,
+    });
   }
 
   @ApiOperation({
