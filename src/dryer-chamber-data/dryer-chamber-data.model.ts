@@ -21,6 +21,7 @@ interface DryerChamberDataCreationAttrs {
   dryerChamberId: number;
   isDrying?: boolean;
   isTakenOut?: boolean;
+  chamberIterationCountWhenBringingIn: number;
 }
 
 @Table({ tableName: 'dryer_chamber_data', timestamps: false })
@@ -76,6 +77,12 @@ export class DryerChamberData extends Model<
     defaultValue: false,
   })
   isTakenOut: boolean;
+
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+  })
+  chamberIterationCountWhenBringingIn: number;
 
   @ForeignKey(() => DryerChamber)
   @Column({ field: 'dryer_chamber_id ' })

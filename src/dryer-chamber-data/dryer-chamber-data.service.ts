@@ -20,6 +20,10 @@ import { WoodConditionService } from 'src/wood-condition/wood-condition.service'
 import { WarehouseService } from 'src/warehouse/warehouse.service';
 import { WoodShipmentService } from 'src/wood-shipment/wood-shipment.service';
 
+import { Op, Sequelize } from 'sequelize';
+import * as moment from 'moment';
+import { DryerChamber } from 'src/dryer-chamber/dryer-chamber.model';
+
 @Injectable()
 export class DryerChamberDataService {
   constructor(
@@ -155,16 +159,96 @@ export class DryerChamberDataService {
     };
   }
 
-  async getAllRecords() {
-    const dryerChamberDatas = await this.dryerChamberDataRepository.findAll();
+  async getAllRecords({
+    startDate,
+    endDate,
+  }: {
+    startDate: string;
+    endDate: string;
+  }) {
+    if (!startDate || !endDate) {
+      throw new HttpException(
+        'Query параметры startDate & endDate обязателен для запроса',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
-    return dryerChamberDatas;
+    const momentStartDate = moment(startDate);
+    const momentEndDate = moment(endDate);
+
+    const now = momentStartDate.clone();
+    const days = [];
+
+    while (now.isSameOrBefore(endDate)) {
+      days.push(now.toISOString());
+      now.add(1, 'days');
+    }
+
+    if (days.length > 31) {
+      throw new HttpException(
+        'Количество запрашиваемых дней ограничено до 31',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const startYear = momentStartDate.year();
+    const startMonth = momentStartDate.month() + 1;
+    const startDay = momentStartDate.date();
+
+    const endYear = momentEndDate.year();
+    const endMonth = momentEndDate.month() + 1;
+    const endDay = momentEndDate.date();
+
+    const dryerChamberDatas = await this.dryerChamberDataRepository.findAll({
+      include: [WoodClass, WoodType, Dimension, DryerChamber],
+      attributes: {
+        exclude: ['dryerChamberId', 'woodClassId', 'woodTypeId', 'dimensionId'],
+      },
+      where: {
+        ...(startDate && endDate
+          ? {
+              date: {
+                [Op.and]: [
+                  Sequelize.where(
+                    Sequelize.fn('date_trunc', 'day', Sequelize.col('date')),
+                    Op.gte,
+                    `${startYear}-${startMonth}-${startDay}`,
+                  ),
+                  Sequelize.where(
+                    Sequelize.fn('date_trunc', 'day', Sequelize.col('date')),
+                    Op.lte,
+                    `${endYear}-${endMonth}-${endDay}`,
+                  ),
+                ],
+              },
+            }
+          : {}),
+      },
+      order: [['date', 'DESC']],
+    });
+
+    let totalVolume = 0;
+
+    dryerChamberDatas.forEach((dryerChamberData) => {
+      totalVolume +=
+        dryerChamberData.dimension.volume * dryerChamberData.amount;
+    });
+
+    return {
+      data: dryerChamberDatas,
+      totalVolume: Number(totalVolume.toFixed(2)),
+    };
   }
 
-  async createDryerChamberDataRecord(
-    dryerChamberId: number,
-    dryerChamberDataDto: CreateDryerChamberDataDto,
-  ) {
+  async createDryerChamberDataRecord({
+    dryerChamberId,
+    dryerChamberDataDto,
+    chamberIterationCountWhenBringingIn,
+  }: {
+    dryerChamberId: number;
+    dryerChamberDataDto: CreateDryerChamberDataDto;
+    chamberIterationCountWhenBringingIn: number;
+  }) {
     const { dimensionId, woodClassId, woodTypeId, date, amount } =
       dryerChamberDataDto;
 
@@ -209,6 +293,7 @@ export class DryerChamberDataService {
       amount,
       isDrying: true,
       isTakenOut: false,
+      chamberIterationCountWhenBringingIn,
     });
 
     await dryerChamberData.$set('woodClass', woodClassId);
@@ -300,18 +385,21 @@ export class DryerChamberDataService {
       );
     }
 
+    const newIterationCount = dryerChamber.chamberIterationCount + 1;
+
     const createdRecords = await Promise.all(
       dryerChamberDataDtos.map(async (dryerChamberDataDto) => {
-        return await this.createDryerChamberDataRecord(
+        return await this.createDryerChamberDataRecord({
           dryerChamberId,
           dryerChamberDataDto,
-        );
+          chamberIterationCountWhenBringingIn: newIterationCount,
+        });
       }),
     );
 
     // Цикл сушильной камеры обновляется при
     // занесении доски.
-    dryerChamber.chamberIterationCount = dryerChamber.chamberIterationCount + 1;
+    dryerChamber.chamberIterationCount = newIterationCount;
 
     await dryerChamber.save();
 

@@ -10,10 +10,14 @@ module.exports = {
      * await queryInterface.createTable('users', { id: Sequelize.INTEGER });
      */
 
-    // Изменить INTEGER на FLOAT для volume
-    queryInterface.changeColumn('dimension', 'volume', {
-      type: Sequelize.DataTypes.FLOAT,
-    });
+    await queryInterface.addColumn(
+      'dryer_chamber_data',
+      'chamberIterationCountWhenBringingIn',
+      {
+        type: Sequelize.DataTypes.INTEGER,
+        allowNull: true,
+      },
+    );
   },
 
   async down(queryInterface, Sequelize) {
