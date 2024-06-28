@@ -61,50 +61,6 @@ export class WorkshopOutController {
   }
 
   @ApiOperation({
-    summary: 'Получение выхода для цеха как для чартов на странице статистики',
-  })
-  @Roles('SUPERADMIN', 'ADMIN', 'USER')
-  @UseGuards(RolesGuard)
-  @Get('/get/workshop-stats/:workshopId')
-  getStatsForWorkshop(
-    @Param('workshopId') workshopId: string,
-    @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string,
-  ) {
-    return this.workshopOutService.getWorkshopsStatsByTimespan({
-      workshopId: Number(workshopId),
-      startDate,
-      endDate,
-    });
-  }
-
-  @ApiOperation({
-    summary: 'Получение итоговой прибыли для цеха за выбранные дни',
-  })
-  @Roles('SUPERADMIN', 'ADMIN', 'USER')
-  @UseGuards(RolesGuard)
-  @Get('/get/workshop-stats/profit/:workshopId')
-  getProfitStats(
-    @Param('workshopId') workshopId: string,
-    @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string,
-    @Query('perUnit') perUnit: string,
-  ) {
-    let isPerUnitSearch = false;
-
-    if (perUnit === 'true') {
-      isPerUnitSearch = true;
-    }
-
-    return this.workshopOutService.getProfitStatsByTimespan({
-      workshopId: Number(workshopId),
-      startDate,
-      endDate,
-      isPerUnitSearch,
-    });
-  }
-
-  @ApiOperation({
     summary: 'Получение свода о произведенной доске в цехах',
   })
   @Roles('SUPERADMIN', 'ADMIN', 'USER')
