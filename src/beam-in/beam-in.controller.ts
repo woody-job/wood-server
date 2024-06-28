@@ -62,24 +62,6 @@ export class BeamInController {
     });
   }
 
-  @Roles('SUPERADMIN', 'ADMIN', 'USER')
-  @UseGuards(RolesGuard)
-  @ApiOperation({
-    summary: 'Получение свода входа для цеха за выбранные дни',
-  })
-  @Get('/get/workshop-stats/:workshopId')
-  getStatsForWorkshop(
-    @Param('workshopId') workshopId: string,
-    @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string,
-  ) {
-    return this.beamInService.getWorkshopsStatsByTimespan({
-      workshopId: Number(workshopId),
-      startDate,
-      endDate,
-    });
-  }
-
   @Roles('SUPERADMIN', 'ADMIN')
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Удаление входа леса в цех' })
