@@ -200,49 +200,87 @@ export class WarehouseService {
       },
     });
 
-    const woodTypes = await this.woodTypeService.getAllWoodTypes();
-    const woodClasses = await this.woodClassService.getAllWoodClasses();
-
     let totalVolume = 0;
+    let outputData = [];
 
-    const outputSunburstData = woodTypes.map((woodType) => {
-      const warehouseRecordsByWoodType = warehouseRecords.filter(
-        (warehouseRecord) => warehouseRecord.woodType.id === woodType.id,
+    warehouseRecords.forEach((warehouseRecord) => {
+      const recordDimension = warehouseRecord.dimension;
+      const recordWoodType = warehouseRecord.woodType;
+
+      const existentOutputData = outputData.find(
+        (output) =>
+          output.dimension.width === recordDimension.width &&
+          output.dimension.thickness === recordDimension.thickness &&
+          output.dimension.length === recordDimension.length &&
+          output.woodType.id === recordWoodType.id,
       );
 
-      return {
-        name: woodType.name,
-        children: woodClasses.map((woodClass) => {
-          const warehouseRecordsByWoodClass = warehouseRecordsByWoodType.filter(
-            (warehouseRecord) => warehouseRecord.woodClass.id === woodClass.id,
-          );
-
-          return {
-            name: woodClass.name,
-            children: warehouseRecordsByWoodClass.map((warehouseRecord) => {
-              const dimensionString = `${warehouseRecord.dimension.width}x${warehouseRecord.dimension.thickness}x${warehouseRecord.dimension.length}`;
-              const volume = Number(
-                (
-                  warehouseRecord.dimension.volume * warehouseRecord.amount
-                ).toFixed(4),
-              );
-
-              totalVolume += volume;
-
-              return {
-                name: dimensionString,
-                size: volume,
-              };
-            }),
+      const outputItem = existentOutputData
+        ? existentOutputData
+        : {
+            id: 0,
+            dimension: recordDimension,
+            woodType: recordWoodType,
+            amount: 0,
+            firstClassVolume: 0,
+            secondClassVolume: 0,
+            marketClassVolume: 0,
+            brownClassVolume: 0,
+            totalVolume: 0,
           };
-        }),
-      };
+
+      let woodClassKey = '';
+
+      switch (warehouseRecord.woodClass.name) {
+        case 'Первый':
+          woodClassKey = 'firstClass';
+          break;
+        case 'Второй':
+          woodClassKey = 'secondClass';
+          break;
+        case 'Рыночный':
+          woodClassKey = 'marketClass';
+          break;
+        case 'Браун':
+          woodClassKey = 'brownClass';
+          break;
+        default:
+          break;
+      }
+
+      outputItem[`${woodClassKey}Volume`] = Number(
+        (
+          outputItem[`${woodClassKey}Volume`] +
+          warehouseRecord.dimension.volume * warehouseRecord.amount
+        ).toFixed(4),
+      );
+      outputItem.amount += warehouseRecord.amount;
+
+      outputItem.totalVolume = Number(
+        (
+          outputItem.firstClassVolume +
+          outputItem.secondClassVolume +
+          outputItem.marketClassVolume +
+          outputItem.brownClassVolume
+        ).toFixed(2),
+      );
+
+      outputItem.id = Number(
+        `${outputItem.dimension.id}${outputItem.woodType.id}`,
+      );
+
+      if (!existentOutputData) {
+        outputData.push(outputItem);
+      }
     });
 
+    totalVolume = outputData.reduce((total, current) => {
+      return total + current.totalVolume;
+    }, 0);
+
     return {
-      sunburstData: outputSunburstData,
       totalVolume: Number(totalVolume.toFixed(2)),
-      oldOutput: warehouseRecords,
+      data: outputData,
     };
   }
 
