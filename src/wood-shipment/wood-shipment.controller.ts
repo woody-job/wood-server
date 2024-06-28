@@ -79,25 +79,6 @@ export class WoodShipmentController {
     });
   }
 
-  @ApiOperation({
-    summary: `Получение отгрузок по состоянию доски (сырая/сухая) для страницы 
-    поступлений с возможностью фильтрации по датам (только санберст)`,
-  })
-  @Roles('SUPERADMIN', 'ADMIN', 'USER')
-  @UseGuards(RolesGuard)
-  @Get('/get/day-range-stats/:woodConditionId')
-  getShipmentStats(
-    @Param('woodConditionId') woodConditionId: string,
-    @Query('startDate') startDate: string | undefined,
-    @Query('endDate') endDate: string | undefined,
-  ) {
-    return this.woodShipmentService.getWoodShipmentStatsByWoodCondition({
-      woodConditionId: Number(woodConditionId),
-      startDate,
-      endDate,
-    });
-  }
-
   @ApiOperation({ summary: 'Удаление отгрузки доски' })
   @Roles('SUPERADMIN', 'ADMIN')
   @UseGuards(RolesGuard)
