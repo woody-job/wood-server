@@ -41,6 +41,8 @@ import { Warehouse } from './warehouse/warehouse.model';
 import { DataManagementController } from './data-management/data-management.controller';
 import { DataManagementService } from './data-management/data-management.service';
 import { DataManagementModule } from './data-management/data-management.module';
+import { SupplierModule } from './supplier/supplier.module';
+import { Supplier } from './supplier/supplier.model';
 
 @Module({
   controllers: [DataManagementController],
@@ -58,9 +60,9 @@ import { DataManagementModule } from './data-management/data-management.module';
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DATABASE,
       // Отключать при start:dev
-      dialectOptions: {
-        ssl: true,
-      },
+      // dialectOptions: {
+      //   ssl: true,
+      // },
       pool: {
         max: 10,
         min: 0,
@@ -86,6 +88,7 @@ import { DataManagementModule } from './data-management/data-management.module';
         WoodArrival,
         WoodShipment,
         Warehouse,
+        Supplier,
       ],
       autoLoadModels: true,
       synchronize: true,
@@ -110,6 +113,7 @@ import { DataManagementModule } from './data-management/data-management.module';
     WoodShipmentModule,
     WarehouseModule,
     DataManagementModule,
+    SupplierModule,
   ],
 })
 export class AppModule {}
