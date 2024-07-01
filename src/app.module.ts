@@ -45,6 +45,8 @@ import { SupplierModule } from './supplier/supplier.module';
 import { Supplier } from './supplier/supplier.model';
 import { BuyerModule } from './buyer/buyer.module';
 import { Buyer } from './buyer/buyer.model';
+import { PersonInChargeModule } from './person-in-charge/person-in-charge.module';
+import { PersonInCharge } from './person-in-charge/person-in-charge.model';
 
 @Module({
   controllers: [DataManagementController],
@@ -62,9 +64,9 @@ import { Buyer } from './buyer/buyer.model';
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DATABASE,
       // Отключать при start:dev
-      // dialectOptions: {
-      //   ssl: true,
-      // },
+      dialectOptions: {
+        ssl: true,
+      },
       pool: {
         max: 10,
         min: 0,
@@ -92,6 +94,7 @@ import { Buyer } from './buyer/buyer.model';
         Warehouse,
         Supplier,
         Buyer,
+        PersonInCharge,
       ],
       autoLoadModels: true,
       synchronize: true,
@@ -118,6 +121,7 @@ import { Buyer } from './buyer/buyer.model';
     DataManagementModule,
     SupplierModule,
     BuyerModule,
+    PersonInChargeModule,
   ],
 })
 export class AppModule {}

@@ -45,7 +45,7 @@ export class BuyerService {
 
     if (!Buyer) {
       throw new HttpException(
-        'Выбранный Покупатель не найден',
+        'Выбранный покупатель не найден',
         HttpStatus.NOT_FOUND,
       );
     }
@@ -62,7 +62,7 @@ export class BuyerService {
 
     if (!buyer) {
       throw new HttpException(
-        'Выбранный Покупатель не найден',
+        'Выбранный покупатель не найден',
         HttpStatus.NOT_FOUND,
       );
     }
