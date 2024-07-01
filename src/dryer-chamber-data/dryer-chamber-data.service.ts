@@ -98,64 +98,87 @@ export class DryerChamberDataService {
       where: { isDrying: true },
     });
 
-    const woodTypes = await this.woodTypeService.getAllWoodTypes();
-    const woodClasses = await this.woodClassService.getAllWoodClasses();
-
     let totalVolume = 0;
+    let outputData = [];
 
-    const outputSunburstData = woodTypes.map((woodType) => {
-      const dryerChamberDatasByWoodType = dryerChamberDatas.filter(
-        (warehouseRecord) => warehouseRecord.woodType.id === woodType.id,
+    dryerChamberDatas.forEach((dryerChamberData) => {
+      const chamberDataDimension = dryerChamberData.dimension;
+      const chamberDataWoodType = dryerChamberData.woodType;
+
+      const existentOutputData = outputData.find(
+        (output) =>
+          output.dimension.width === chamberDataDimension.width &&
+          output.dimension.thickness === chamberDataDimension.thickness &&
+          output.dimension.length === chamberDataDimension.length &&
+          output.woodType.id === chamberDataWoodType.id,
       );
 
-      return {
-        name: woodType.name,
-        children: woodClasses.map((woodClass) => {
-          const dryerChamberDatasByWoodClass =
-            dryerChamberDatasByWoodType.filter(
-              (warehouseRecord) =>
-                warehouseRecord.woodClass.id === woodClass.id,
-            );
-
-          const dimensionOutput = {
-            name: woodClass.name,
-            children: [],
+      const outputItem = existentOutputData
+        ? existentOutputData
+        : {
+            id: 0,
+            dimension: chamberDataDimension,
+            woodType: chamberDataWoodType,
+            amount: 0,
+            firstClassVolume: 0,
+            secondClassVolume: 0,
+            marketClassVolume: 0,
+            brownClassVolume: 0,
+            totalVolume: 0,
           };
 
-          dryerChamberDatasByWoodClass.forEach((warehouseRecord) => {
-            const dimensionString = `${warehouseRecord.dimension.width}x${warehouseRecord.dimension.thickness}x${warehouseRecord.dimension.length}`;
-            const volume = Number(
-              (
-                warehouseRecord.dimension.volume * warehouseRecord.amount
-              ).toFixed(4),
-            );
+      let woodClassKey = '';
 
-            totalVolume += volume;
+      switch (dryerChamberData.woodClass.name) {
+        case 'Первый':
+          woodClassKey = 'firstClass';
+          break;
+        case 'Второй':
+          woodClassKey = 'secondClass';
+          break;
+        case 'Рыночный':
+          woodClassKey = 'marketClass';
+          break;
+        case 'Браун':
+          woodClassKey = 'brownClass';
+          break;
+        default:
+          break;
+      }
 
-            const existentWoodClassOutputChild = dimensionOutput.children.find(
-              (child) => child.name === dimensionString,
-            );
+      outputItem[`${woodClassKey}Volume`] = Number(
+        (
+          outputItem[`${woodClassKey}Volume`] +
+          dryerChamberData.dimension.volume * dryerChamberData.amount
+        ).toFixed(4),
+      );
+      outputItem.amount += dryerChamberData.amount;
 
-            if (existentWoodClassOutputChild) {
-              existentWoodClassOutputChild.size = Number(
-                (existentWoodClassOutputChild.size + volume).toFixed(2),
-              );
-            } else {
-              dimensionOutput.children.push({
-                name: dimensionString,
-                size: volume,
-              });
-            }
-          });
+      outputItem.totalVolume = Number(
+        (
+          outputItem.firstClassVolume +
+          outputItem.secondClassVolume +
+          outputItem.marketClassVolume +
+          outputItem.brownClassVolume
+        ).toFixed(2),
+      );
 
-          return dimensionOutput;
-        }),
-      };
+      outputItem.id = Number(
+        `${outputItem.dimension.id}${outputItem.woodType.id}`,
+      );
+
+      if (!existentOutputData) {
+        outputData.push(outputItem);
+      }
     });
 
+    totalVolume = outputData.reduce((total, current) => {
+      return total + current.totalVolume;
+    }, 0);
+
     return {
-      sunburstData: outputSunburstData,
       totalVolume: Number(totalVolume.toFixed(2)),
+      data: outputData,
     };
   }
 
