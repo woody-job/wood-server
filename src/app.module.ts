@@ -43,6 +43,8 @@ import { DataManagementService } from './data-management/data-management.service
 import { DataManagementModule } from './data-management/data-management.module';
 import { SupplierModule } from './supplier/supplier.module';
 import { Supplier } from './supplier/supplier.model';
+import { BuyerModule } from './buyer/buyer.module';
+import { Buyer } from './buyer/buyer.model';
 
 @Module({
   controllers: [DataManagementController],
@@ -89,6 +91,7 @@ import { Supplier } from './supplier/supplier.model';
         WoodShipment,
         Warehouse,
         Supplier,
+        Buyer,
       ],
       autoLoadModels: true,
       synchronize: true,
@@ -114,6 +117,7 @@ import { Supplier } from './supplier/supplier.model';
     WarehouseModule,
     DataManagementModule,
     SupplierModule,
+    BuyerModule,
   ],
 })
 export class AppModule {}
