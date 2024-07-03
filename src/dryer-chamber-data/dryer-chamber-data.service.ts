@@ -341,19 +341,6 @@ export class DryerChamberDataService {
       );
     }
 
-    // Внести запись об отгрузках сырой доски
-    await this.woodShipmentService.createWoodShipment(
-      {
-        date,
-        woodConditionId: wetWoodCondition.id,
-        woodClassId: dryerChamberData.woodClassId,
-        woodTypeId: dryerChamberData.woodTypeId,
-        dimensionId: dryerChamberData.dimensionId,
-        amount: amount,
-      },
-      { avoidDirectWarehouseChange: true },
-    );
-
     // Убрать со склада сырую доску
     const existentWarehouseRecord =
       await this.warehouseService.findWarehouseRecordByWoodParams({
@@ -470,42 +457,6 @@ export class DryerChamberDataService {
         woodTypeId: dryerChamberData.woodTypeId,
         dimensionId: dryerChamberData.dimensionId,
       });
-    }
-
-    // Добавить запись в поступления (сухая доска)
-    const existentWoodArrival =
-      await this.woodArrivalService.findWoodArrivalByWoodParams({
-        date: dryerChamberData.date,
-        woodConditionId: dryWoodCondition.id,
-        woodClassId: dryerChamberData.woodClassId,
-        woodTypeId: dryerChamberData.woodTypeId,
-        dimensionId: dryerChamberData.dimensionId,
-      });
-
-    if (!existentWoodArrival) {
-      await this.woodArrivalService.createWoodArrival(
-        {
-          date: dryerChamberData.date,
-          woodConditionId: dryWoodCondition.id,
-          woodClassId: dryerChamberData.woodClassId,
-          woodTypeId: dryerChamberData.woodTypeId,
-          dimensionId: dryerChamberData.dimensionId,
-          amount: dryerChamberData.amount,
-        },
-        { avoidDirectWarehouseChange: true },
-      );
-    } else {
-      await this.woodArrivalService.editWoodArrival(
-        existentWoodArrival.id,
-        {
-          // Если в текущий день уже есть поступления сырой доски с такими параметрами,
-          // то новая запись в поступлениях не создается, просто увеличивается его число
-          amount: existentWoodArrival.amount + dryerChamberData.amount,
-          woodClassId: dryerChamberData.woodClassId,
-          dimensionId: dryerChamberData.dimensionId,
-        },
-        { avoidDirectWarehouseChange: true },
-      );
     }
 
     return dryerChamberData;

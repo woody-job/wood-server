@@ -44,13 +44,23 @@ export class WoodArrivalController {
   }
 
   @ApiOperation({
-    summary:
-      'Получение поступленний по состоянию доски (сырая/сухая) с возможностью фильтрации по датам',
+    summary: 'Получение всех поступленний с возможностью фильтрации по датам',
   })
   @Roles('SUPERADMIN', 'ADMIN', 'USER')
   @UseGuards(RolesGuard)
-  @Get('/:woodConditionId')
+  @Get('/get/time-range-stats')
   getAll(
+    @Query('startDate') startDate: string | undefined,
+    @Query('endDate') endDate: string | undefined,
+  ) {
+    return this.woodArrivalService.getAllWoodArrivalsByWoodCondition({
+      startDate,
+      endDate,
+    });
+  }
+
+  @Get(':woodConditionId')
+  getAllByCondition(
     @Param('woodConditionId') woodConditionId: string,
     @Query('startDate') startDate: string | undefined,
     @Query('endDate') endDate: string | undefined,
@@ -64,7 +74,7 @@ export class WoodArrivalController {
 
   @ApiOperation({
     summary: `Получение поступленний по состоянию доски (сырая/сухая) для страницы 
-      поступлений для конкретного дня (таблица + санберст)`,
+      поступлений для конкретного дня (таблица)`,
   })
   @Roles('SUPERADMIN', 'ADMIN', 'USER')
   @UseGuards(RolesGuard)

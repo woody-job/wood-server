@@ -7,6 +7,7 @@ import {
   Model,
   Table,
 } from 'sequelize-typescript';
+import { Supplier } from 'src/supplier/supplier.model';
 import { Dimension } from 'src/dimension/dimension.model';
 import { WoodClass } from 'src/wood-class/wood-class.model';
 import { WoodCondition } from 'src/wood-condition/wood-condition.model';
@@ -19,6 +20,8 @@ interface WoodArrivalCreationAttrs {
   woodTypeId: number;
   dimensionId: number;
   woodConditionId: number;
+  supplierId: number;
+  car: string;
 }
 
 @Table({ tableName: 'wood_arrival', timestamps: false })
@@ -51,6 +54,23 @@ export class WoodArrival extends Model<WoodArrival, WoodArrivalCreationAttrs> {
     allowNull: false,
   })
   amount: number;
+
+  @ApiProperty({
+    example: 'мерс 2881337/1612',
+    description: 'Марка и номера машины (одна строка)',
+  })
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  car: string;
+
+  @ForeignKey(() => Supplier)
+  @Column({ field: 'supplier_id', allowNull: true })
+  supplierId: number;
+
+  @BelongsTo(() => Supplier)
+  supplier: Supplier;
 
   @ApiProperty({
     example: '1',

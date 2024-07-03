@@ -15,6 +15,8 @@ import { WoodType } from 'src/wood-type/wood-type.model';
 import { Dimension } from 'src/dimension/dimension.model';
 import { WoodCondition } from 'src/wood-condition/wood-condition.model';
 import { WarehouseService } from 'src/warehouse/warehouse.service';
+import { SupplierService } from 'src/supplier/supplier.service';
+import { Supplier } from 'src/supplier/supplier.model';
 
 @Injectable()
 export class WoodArrivalService {
@@ -26,6 +28,7 @@ export class WoodArrivalService {
     private dimensionService: DimensionService,
     private woodConditionService: WoodConditionService,
     private warehouseService: WarehouseService,
+    private supplierService: SupplierService,
   ) {}
 
   private async updateWarehouseRecord({
@@ -97,6 +100,8 @@ export class WoodArrivalService {
       woodTypeId,
       woodConditionId,
       dimensionId,
+      supplierId,
+      car,
     } = woodArrivalDto;
 
     const { avoidDirectWarehouseChange = false } = params ?? {};
@@ -137,38 +142,20 @@ export class WoodArrivalService {
       );
     }
 
-    const existentWoodArrival = await this.findWoodArrivalByWoodParams({
-      date,
-      woodConditionId,
-      woodClassId,
-      woodTypeId,
-      dimensionId,
-    });
+    const supplier = supplierId
+      ? await this.supplierService.findSupplierById(supplierId)
+      : null;
 
-    // Если поступление в выбранный день с выбранными параметрами доски уже существует,
-    // новая запись не создается. Просто меняется ее количество.
-    if (existentWoodArrival) {
-      existentWoodArrival.amount = existentWoodArrival.amount + amount;
-
-      await existentWoodArrival.save();
-
-      // Внести доски на склад
-      if (!avoidDirectWarehouseChange) {
-        await this.updateWarehouseRecord({
-          amount: existentWoodArrival.amount,
-          woodClassId: existentWoodArrival.woodClassId,
-          woodTypeId: existentWoodArrival.woodTypeId,
-          dimensionId: existentWoodArrival.dimensionId,
-          woodConditionId: existentWoodArrival.woodConditionId,
-          isCreate: true,
-        });
-      }
-
-      return existentWoodArrival;
+    if (supplierId && !supplier) {
+      throw new HttpException(
+        'Выбранный покупатель не найден',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     const woodArrival = await this.woodArrivalRepository.create({
       amount,
+      car: car ? car : null,
       date,
     });
 
@@ -183,6 +170,11 @@ export class WoodArrivalService {
 
     await woodArrival.$set('dimension', dimensionId);
     woodArrival.dimension = dimension;
+
+    if (supplier) {
+      await woodArrival.$set('supplier', supplierId);
+      woodArrival.supplier = supplier;
+    }
 
     // Внести доски на склад
     if (!avoidDirectWarehouseChange) {
@@ -283,7 +275,7 @@ export class WoodArrivalService {
     startDate,
     endDate,
   }: {
-    woodConditionId: number;
+    woodConditionId?: number;
     startDate?: string;
     endDate?: string;
   }) {
@@ -299,17 +291,18 @@ export class WoodArrivalService {
     const endDay = momentEndDate.date();
 
     const woodArrivals = await this.woodArrivalRepository.findAll({
-      include: [WoodClass, WoodType, WoodCondition, Dimension],
+      include: [WoodClass, WoodType, WoodCondition, Dimension, Supplier],
       attributes: {
         exclude: [
           'woodConditionId',
           'woodClassId',
           'woodTypeId',
           'dimensionId',
+          'supplierId',
         ],
       },
       where: {
-        woodConditionId,
+        ...(woodConditionId ? { woodConditionId } : {}),
         ...(startDate && endDate
           ? {
               date: {
@@ -329,10 +322,19 @@ export class WoodArrivalService {
             }
           : {}),
       },
-      order: [['date', 'DESC']],
+      order: [['id', 'DESC']],
     });
 
-    return woodArrivals;
+    let totalVolume = 0;
+
+    woodArrivals.forEach((woodArrival) => {
+      totalVolume += woodArrival.dimension.volume * woodArrival.amount;
+    });
+
+    return {
+      data: woodArrivals,
+      totalVolume: Number(totalVolume.toFixed(2)),
+    };
   }
 
   async deleteWoodArrival(woodArrivalId: number) {
@@ -365,12 +367,16 @@ export class WoodArrivalService {
     woodClassId,
     woodTypeId,
     dimensionId,
+    supplierId,
+    car,
   }: {
     date: string;
     woodConditionId: number;
     woodClassId: number;
     woodTypeId: number;
     dimensionId: number;
+    supplierId?: number;
+    car?: string;
   }) {
     const momentDate = moment(date);
 
@@ -389,6 +395,8 @@ export class WoodArrivalService {
         woodClassId,
         woodTypeId,
         dimensionId,
+        ...(supplierId ? { supplierId } : {}),
+        ...(car ? { car } : {}),
       },
     });
 
@@ -409,21 +417,20 @@ export class WoodArrivalService {
       );
     }
 
-    const woodClasses = await this.woodClassService.getAllWoodClasses();
-    const woodArrivals = await this.getAllWoodArrivalsByWoodCondition({
-      woodConditionId,
-      startDate: date,
-      endDate: date,
-    });
+    const { data: woodArrivals } = await this.getAllWoodArrivalsByWoodCondition(
+      {
+        woodConditionId,
+        startDate: date,
+        endDate: date,
+      },
+    );
 
     const tableData = []; // dimension, woodClass, amount, id (woodArrivalId)
-    const sunburstData = [];
     let totalVolume = 0;
 
     if (!woodArrivals || !woodArrivals.length) {
       return {
         tableData: [],
-        sunburstData: [],
         totalVolume: 0,
       };
     }
@@ -437,49 +444,20 @@ export class WoodArrivalService {
         dimension: dimensionString,
         woodClass: woodClassName,
         amount: woodArrival.amount,
+        car: woodArrival.car,
+        supplier: woodArrival.supplier ? woodArrival.supplier.name : null,
+        volume: Number(
+          (woodArrival.dimension.volume * woodArrival.amount).toFixed(2),
+        ),
       };
 
-      const tableDataWithSameParams = tableData.find(
-        (tableRow) =>
-          tableRow.dimension === dimensionString &&
-          tableRow.woodClass === woodArrival.woodClass.name,
-      );
-
-      if (tableDataWithSameParams) {
-        tableDataWithSameParams.amount += woodArrival.amount;
-      } else {
-        tableData.push(tableRow);
-      }
+      tableData.push(tableRow);
 
       totalVolume += woodArrival.dimension.volume * woodArrival.amount;
     });
 
-    woodClasses.forEach((woodClass) => {
-      const woodArrivalsByWoodClass = woodArrivals.filter(
-        (woodArrival) => woodArrival.woodClass.id === woodClass.id,
-      );
-
-      const woodClassName = woodClass.name;
-
-      const sunburstItem = {
-        name: woodClassName,
-        size: 0,
-      };
-
-      woodArrivalsByWoodClass.forEach((woodArrival) => {
-        const volume = Number(
-          (woodArrival.dimension.volume * woodArrival.amount).toFixed(4),
-        );
-
-        sunburstItem.size += volume;
-      });
-
-      sunburstData.push(sunburstItem);
-    });
-
     return {
       tableData,
-      sunburstData,
       totalVolume: Number(totalVolume.toFixed(4)),
     };
   }
