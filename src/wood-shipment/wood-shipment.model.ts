@@ -7,7 +7,9 @@ import {
   Model,
   Table,
 } from 'sequelize-typescript';
+import { Buyer } from 'src/buyer/buyer.model';
 import { Dimension } from 'src/dimension/dimension.model';
+import { PersonInCharge } from 'src/person-in-charge/person-in-charge.model';
 import { WoodClass } from 'src/wood-class/wood-class.model';
 import { WoodCondition } from 'src/wood-condition/wood-condition.model';
 import { WoodType } from 'src/wood-type/wood-type.model';
@@ -19,6 +21,9 @@ interface WoodShipmentCreationAttrs {
   woodTypeId: number;
   dimensionId: number;
   woodConditionId: number;
+  car: string;
+  buyerId: number;
+  personInChargeId: number;
 }
 
 @Table({ tableName: 'wood_shipment', timestamps: false })
@@ -54,6 +59,38 @@ export class WoodShipment extends Model<
     allowNull: false,
   })
   amount: number;
+
+  @ApiProperty({
+    example: 'мерс 2881337/1612',
+    description: 'Марка и номера машины (одна строка)',
+  })
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  car: string;
+
+  @ApiProperty({
+    example: '1',
+    description: 'id покупателя',
+  })
+  @ForeignKey(() => Buyer)
+  @Column({ field: 'buyer_id', allowNull: true })
+  buyerId: number;
+
+  @BelongsTo(() => Buyer)
+  buyer: Buyer;
+
+  @ApiProperty({
+    example: '1',
+    description: 'id ответственного',
+  })
+  @ForeignKey(() => PersonInCharge)
+  @Column({ field: 'person_in_charge_id', allowNull: true })
+  personInChargeId: number;
+
+  @BelongsTo(() => PersonInCharge)
+  personInCharge: PersonInCharge;
 
   @ApiProperty({
     example: '1',

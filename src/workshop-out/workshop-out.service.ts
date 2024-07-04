@@ -549,37 +549,6 @@ export class WorkshopOutService {
       );
     }
 
-    const existentWoodArrival =
-      await this.woodArrivalService.findWoodArrivalByWoodParams({
-        date: workshopOut.date,
-        woodConditionId: wetWoodCondition.id,
-        woodClassId: workshopOut.woodClassId,
-        woodTypeId: workshopOut.woodTypeId,
-        dimensionId: workshopOut.dimensionId,
-      });
-
-    if (!existentWoodArrival) {
-      // Такого кейса в принципе быть не должно
-
-      return;
-    }
-
-    let newAmount = existentWoodArrival.amount - workshopOut.amount;
-
-    if (newAmount < 0) {
-      throw new HttpException(
-        `В записи поступлений, привязанной к текущему выходу из цеха, 
-          есть только ${existentWoodArrival.amount} доски(досок). 
-          Нельзя изменить количество выхода на ${workshopOut.amount}. 
-          Выход из цеха был удален`,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    if (newAmount === 0) {
-      return;
-    }
-
     // Изменить запись на складе (сырая доска)
     await this.updateWarehouseRecord({
       amount: workshopOut.amount,

@@ -148,7 +148,7 @@ export class WoodArrivalService {
 
     if (supplierId && !supplier) {
       throw new HttpException(
-        'Выбранный покупатель не найден',
+        'Выбранный поставщик не найден',
         HttpStatus.NOT_FOUND,
       );
     }
@@ -290,6 +290,21 @@ export class WoodArrivalService {
     const endMonth = momentEndDate.month() + 1;
     const endDay = momentEndDate.date();
 
+    const now = momentStartDate.clone();
+    const days = [];
+
+    while (now.isSameOrBefore(endDate)) {
+      days.push(now.toISOString());
+      now.add(1, 'days');
+    }
+
+    if (days.length > 31) {
+      throw new HttpException(
+        'Количество запрашиваемых дней ограничено до 31',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const woodArrivals = await this.woodArrivalRepository.findAll({
       include: [WoodClass, WoodType, WoodCondition, Dimension, Supplier],
       attributes: {
@@ -322,7 +337,7 @@ export class WoodArrivalService {
             }
           : {}),
       },
-      order: [['id', 'DESC']],
+      order: [['date', 'DESC']],
     });
 
     let totalVolume = 0;

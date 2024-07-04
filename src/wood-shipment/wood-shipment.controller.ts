@@ -50,13 +50,29 @@ export class WoodShipmentController {
   @Roles('SUPERADMIN', 'ADMIN', 'USER')
   @UseGuards(RolesGuard)
   @Get('/:woodConditionId')
-  getAll(
+  getAllByCondition(
     @Param('woodConditionId') woodConditionId: string,
     @Query('startDate') startDate: string | undefined,
     @Query('endDate') endDate: string | undefined,
   ) {
     return this.woodShipmentService.getAllWoodShipmentsByWoodCondition({
       woodConditionId: Number(woodConditionId),
+      startDate,
+      endDate,
+    });
+  }
+
+  @ApiOperation({
+    summary: 'Получение всех отгрузок с возможностью фильтрации по датам',
+  })
+  @Roles('SUPERADMIN', 'ADMIN', 'USER')
+  @UseGuards(RolesGuard)
+  @Get('/get/time-range-stats')
+  getAll(
+    @Query('startDate') startDate: string | undefined,
+    @Query('endDate') endDate: string | undefined,
+  ) {
+    return this.woodShipmentService.getAllWoodShipmentsByWoodCondition({
       startDate,
       endDate,
     });

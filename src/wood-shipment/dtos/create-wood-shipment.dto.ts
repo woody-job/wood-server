@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDateString, IsNumber } from 'class-validator';
+import {
+  IsDateString,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Length,
+} from 'class-validator';
 
 export class CreateWoodShipmentDto {
   @ApiProperty({
@@ -43,4 +49,29 @@ export class CreateWoodShipmentDto {
   })
   @IsNumber({}, { message: 'Сечение выбрано некорректно' })
   readonly dimensionId: number;
+
+  @ApiProperty({
+    example: '1',
+    description: 'id покупателя',
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'Покупатель выбран некорректно' })
+  readonly buyerId: number;
+
+  @ApiProperty({
+    example: '1',
+    description: 'id ответственного',
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'Ответственный выбран некорректно' })
+  readonly personInChargeId: number;
+
+  @ApiProperty({
+    example: 'мерс 2881337/1612',
+    description: 'Марка и номера машины (одна строка)',
+  })
+  @IsOptional()
+  @IsString()
+  @Length(1, 50, { message: 'Не меньше 1 и не больше 50 символов' })
+  readonly car: string;
 }

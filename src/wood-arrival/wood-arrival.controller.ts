@@ -59,6 +59,10 @@ export class WoodArrivalController {
     });
   }
 
+  @ApiOperation({
+    summary:
+      'Получение всех поступленний по состоянию доски с возможностью фильтрации по датам',
+  })
   @Get(':woodConditionId')
   getAllByCondition(
     @Param('woodConditionId') woodConditionId: string,

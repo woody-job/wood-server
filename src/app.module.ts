@@ -63,12 +63,11 @@ import { PersonInCharge } from './person-in-charge/person-in-charge.model';
       username: process.env.POSTGRES_USER,
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DATABASE,
-      // Отключать при start:dev
       dialectOptions: {
-        ssl: true,
+        ssl: process.env.NODE_ENV === 'development' ? false : true,
       },
       pool: {
-        max: 10,
+        max: 1000,
         min: 0,
         acquire: 30 * 1000,
         idle: 10 * 1000,

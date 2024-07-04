@@ -65,6 +65,10 @@ export class WoodArrival extends Model<WoodArrival, WoodArrivalCreationAttrs> {
   })
   car: string;
 
+  @ApiProperty({
+    example: '1',
+    description: 'id поставщика',
+  })
   @ForeignKey(() => Supplier)
   @Column({ field: 'supplier_id', allowNull: true })
   supplierId: number;
