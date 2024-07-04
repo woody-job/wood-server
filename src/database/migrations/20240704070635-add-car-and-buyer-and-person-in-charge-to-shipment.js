@@ -10,7 +10,7 @@ module.exports = {
      * await queryInterface.createTable('users', { id: Sequelize.INTEGER });
      */
 
-    await queryInterface.renameTable('person-in-charge', 'person_in_charge');
+    // await queryInterface.renameTable('person-in-charge', 'person_in_charge');
 
     await queryInterface.addColumn('wood_shipment', 'car', {
       type: Sequelize.DataTypes.STRING,
