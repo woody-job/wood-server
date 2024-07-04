@@ -13,6 +13,10 @@ import { WoodType } from 'src/wood-type/wood-type.model';
 import { WoodTypeModule } from 'src/wood-type/wood-type.module';
 import { WarehouseModule } from 'src/warehouse/warehouse.module';
 import { AuthModule } from 'src/auth/auth.module';
+import { Buyer } from 'src/buyer/buyer.model';
+import { PersonInCharge } from 'src/person-in-charge/person-in-charge.model';
+import { BuyerModule } from 'src/buyer/buyer.module';
+import { PersonInChargeModule } from 'src/person-in-charge/person-in-charge.module';
 
 @Module({
   providers: [WoodShipmentService],
@@ -24,6 +28,8 @@ import { AuthModule } from 'src/auth/auth.module';
       WoodType,
       Dimension,
       WoodCondition,
+      Buyer,
+      PersonInCharge,
     ]),
     WoodClassModule,
     WoodTypeModule,
@@ -31,6 +37,8 @@ import { AuthModule } from 'src/auth/auth.module';
     WoodConditionModule,
     WarehouseModule,
     AuthModule,
+    BuyerModule,
+    PersonInChargeModule,
   ],
   exports: [WoodShipmentService],
 })
