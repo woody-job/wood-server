@@ -436,13 +436,6 @@ export class WorkshopOutService {
       order: [['date', 'DESC']],
     });
 
-    const { totalVolume: totalBeamInVolume } =
-      await this.beamInService.getAllBeamInForWorkshop({
-        workshopId,
-        startDate: date,
-        endDate: date,
-      });
-
     let totalWorkshopOutVolume = 0;
 
     workshopOuts.forEach((workshopOut) => {
@@ -450,15 +443,9 @@ export class WorkshopOutService {
         workshopOut.dimension.volume * workshopOut.amount;
     });
 
-    let trashVolume = totalBeamInVolume - totalWorkshopOutVolume;
-
-    if (workshop.id === 2) {
-      trashVolume = totalWorkshopOutVolume * 2 - totalWorkshopOutVolume;
-    }
-
     return {
       data: workshopOuts,
-      totalWorkshopOutVolume,
+      totalWorkshopOutVolume: Number(totalWorkshopOutVolume.toFixed(2)),
     };
   }
 
