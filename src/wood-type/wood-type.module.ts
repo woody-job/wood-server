@@ -9,6 +9,7 @@ import { WoodArrival } from 'src/wood-arrival/wood-arrival.model';
 import { WoodShipment } from 'src/wood-shipment/wood-shipment.model';
 import { Warehouse } from 'src/warehouse/warehouse.model';
 import { AuthModule } from 'src/auth/auth.module';
+import { WoodNaming } from 'src/wood-naming/wood-naming.model';
 
 @Module({
   controllers: [WoodTypeController],
@@ -21,6 +22,7 @@ import { AuthModule } from 'src/auth/auth.module';
       WoodArrival,
       WoodShipment,
       Warehouse,
+      WoodNaming,
     ]),
     AuthModule,
   ],
