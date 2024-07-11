@@ -92,6 +92,7 @@ export class WoodShipmentService {
       woodTypeId,
       woodConditionId,
       dimensionId,
+      dimensionForSaleId,
       buyerId,
       personInChargeId,
       car,
@@ -105,6 +106,17 @@ export class WoodShipmentService {
     if (!dimension) {
       throw new HttpException(
         'Выбранное сечение не найдено',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const dimensionForSale = dimensionForSaleId
+      ? await this.dimensionService.findDimensionById(dimensionForSaleId)
+      : null;
+
+    if (dimensionForSaleId && !dimensionForSale) {
+      throw new HttpException(
+        'Выбранное сечение для продажи не найдено',
         HttpStatus.NOT_FOUND,
       );
     }
@@ -176,6 +188,11 @@ export class WoodShipmentService {
 
     await woodShipment.$set('dimension', dimensionId);
     woodShipment.dimension = dimension;
+
+    if (dimensionForSale) {
+      await woodShipment.$set('dimensionForSale', dimensionForSaleId);
+      woodShipment.dimensionForSale = dimensionForSale;
+    }
 
     if (buyer) {
       await woodShipment.$set('buyer', buyerId);
@@ -321,7 +338,14 @@ export class WoodShipmentService {
         WoodClass,
         WoodType,
         WoodCondition,
-        Dimension,
+        {
+          model: Dimension,
+          as: 'dimension',
+        },
+        {
+          model: Dimension,
+          as: 'dimensionForSale',
+        },
         Buyer,
         PersonInCharge,
       ],
@@ -331,6 +355,9 @@ export class WoodShipmentService {
           'woodClassId',
           'woodTypeId',
           'dimensionId',
+          'dimension_id',
+          'dimensionForSaleId',
+          'dimension_for_sale_id',
           'buyerId',
           'personInChargeId',
         ],
@@ -361,8 +388,8 @@ export class WoodShipmentService {
 
     let totalVolume = 0;
 
-    woodShipments.forEach((woodArrival) => {
-      totalVolume += woodArrival.dimension.volume * woodArrival.amount;
+    woodShipments.forEach((woodShipment) => {
+      totalVolume += woodShipment.dimension.volume * woodShipment.amount;
     });
 
     return {
@@ -464,11 +491,15 @@ export class WoodShipmentService {
 
     woodShipments.forEach((woodShipment) => {
       const dimensionString = `${woodShipment.dimension.width}x${woodShipment.dimension.thickness}x${woodShipment.dimension.length}`;
+      const dimensionForSaleString = woodShipment.dimensionForSale
+        ? `${woodShipment.dimensionForSale.width}x${woodShipment.dimensionForSale.thickness}x${woodShipment.dimensionForSale.length}`
+        : null;
       const woodClassName = woodShipment.woodClass.name;
 
       const tableRow = {
         id: woodShipment.id,
         dimension: dimensionString,
+        dimensionForSale: dimensionForSaleString,
         woodClass: woodClassName,
         amount: woodShipment.amount,
         car: woodShipment.car,

@@ -90,8 +90,14 @@ export class Dimension extends Model<Dimension, DimensionCreationAttrs> {
   @HasMany(() => WoodArrival)
   woodArrivals: WoodArrival[];
 
-  @HasMany(() => WoodShipment)
-  woodShipments: WoodShipment[];
+  @HasMany(() => WoodShipment, { as: 'dimension', foreignKey: 'dimension_id' })
+  woodShipmentsWithActualDimension: WoodShipment[];
+
+  @HasMany(() => WoodShipment, {
+    as: 'dimensionForSale',
+    foreignKey: 'dimension_for_sale_id',
+  })
+  woodShipmentsWithDimensionForSale: WoodShipment[];
 
   @HasMany(() => Warehouse)
   warehouseDatas: Warehouse[];
