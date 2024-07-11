@@ -67,7 +67,7 @@ import { PersonInCharge } from './person-in-charge/person-in-charge.model';
         ssl: process.env.NODE_ENV === 'development' ? false : true,
       },
       pool: {
-        max: 1000,
+        max: 10000,
         min: 0,
         acquire: 30 * 1000,
         idle: 10 * 1000,
