@@ -52,6 +52,14 @@ export class CreateWoodShipmentDto {
 
   @ApiProperty({
     example: '1',
+    description: 'id сечения для продажи',
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'Сечение для продажи выбрано некорректно' })
+  readonly dimensionForSaleId: number;
+
+  @ApiProperty({
+    example: '1',
     description: 'id покупателя',
   })
   @IsOptional()

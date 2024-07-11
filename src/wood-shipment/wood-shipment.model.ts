@@ -20,6 +20,7 @@ interface WoodShipmentCreationAttrs {
   woodClassId: number;
   woodTypeId: number;
   dimensionId: number;
+  dimensionForSaleId?: number;
   woodConditionId: number;
   car: string;
   buyerId: number;
@@ -122,8 +123,22 @@ export class WoodShipment extends Model<
   @Column({ field: 'dimension_id' })
   dimensionId: number;
 
-  @BelongsTo(() => Dimension)
+  @BelongsTo(() => Dimension, { as: 'dimension', foreignKey: 'dimension_id' })
   dimension: Dimension;
+
+  @ApiProperty({
+    example: '1',
+    description: 'id сечения для продажи',
+  })
+  @ForeignKey(() => Dimension)
+  @Column({ field: 'dimension_for_sale_id', allowNull: true })
+  dimensionForSaleId: number;
+
+  @BelongsTo(() => Dimension, {
+    as: 'dimensionForSale',
+    foreignKey: 'dimension_for_sale_id',
+  })
+  dimensionForSale: Dimension;
 
   @ForeignKey(() => WoodCondition)
   @Column({ field: 'wood_condition_id' })
