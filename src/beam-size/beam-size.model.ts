@@ -4,6 +4,7 @@ import { BeamIn } from 'src/beam-in/beam-in.model';
 
 interface BeamSizeCreationAttrs {
   diameter: number;
+  length: number;
   volume: number;
 }
 
@@ -20,14 +21,24 @@ export class BeamSize extends Model<BeamSize, BeamSizeCreationAttrs> {
 
   @ApiProperty({
     example: '12',
-    description: 'Диаметр бревна в метрах',
+    description: 'Диаметр бревна в сантиметрах',
   })
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
-    unique: true,
+    unique: false,
   })
   diameter: number;
+
+  @ApiProperty({
+    example: '6',
+    description: 'Длина бревна в метрах',
+  })
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+  })
+  length: number;
 
   @ApiProperty({
     example: '0.095',
@@ -36,7 +47,7 @@ export class BeamSize extends Model<BeamSize, BeamSizeCreationAttrs> {
   @Column({
     type: DataType.FLOAT,
     allowNull: false,
-    unique: true,
+    unique: false,
   })
   volume: number;
 

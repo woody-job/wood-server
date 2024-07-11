@@ -48,6 +48,14 @@ export class BeamSizeController {
     return this.beamSizeService.getAllBeamSizes();
   }
 
+  @ApiOperation({ summary: 'Получение списка всех размеров леса по длине' })
+  @Roles('SUPERADMIN', 'ADMIN', 'USER')
+  @UseGuards(RolesGuard)
+  @Get('/list/:length')
+  getAllByLength(@Param('length') length: string) {
+    return this.beamSizeService.getAllBeamSizesByLength(Number(length));
+  }
+
   @ApiOperation({ summary: 'Удаление размера леса' })
   @Delete('/:beamSizeId')
   delete(@Param('beamSizeId') beamSizeId: string) {

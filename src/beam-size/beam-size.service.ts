@@ -10,12 +10,13 @@ export class BeamSizeService {
   ) {}
 
   async createBeamSize(beamSizeDto: CreateBeamSizeDto) {
-    const { diameter, volume } = beamSizeDto;
+    const { diameter, volume, length } = beamSizeDto;
 
     const existentBeamSize = await this.beamSizeRepository.findOne({
       where: {
         diameter,
         volume,
+        length,
       },
     });
 
@@ -26,25 +27,31 @@ export class BeamSizeService {
       );
     }
 
-    const beamSize = await this.beamSizeRepository.create({ diameter, volume });
+    const beamSize = await this.beamSizeRepository.create({
+      diameter,
+      volume,
+      length,
+    });
 
     return beamSize;
   }
 
   async createManyBeamSizes(beamSizeDtos: CreateBeamSizeDto[]) {
-    const beamSizes = await Promise.all(
-      beamSizeDtos.map(async (beamSizeDto) => {
-        const beamSize = await this.createBeamSize(beamSizeDto);
+    await this.beamSizeRepository.bulkCreate(beamSizeDtos);
 
-        return beamSize;
-      }),
-    );
+    // const beamSizes = await Promise.all(
+    //   beamSizeDtos.map(async (beamSizeDto) => {
+    //     const beamSize = await this.createBeamSize(beamSizeDto);
 
-    return beamSizes;
+    //     return beamSize;
+    //   }),
+    // );
+
+    // return beamSizes;
   }
 
   async updateBeamSize(beamSizeId: number, beamSizeDto: CreateBeamSizeDto) {
-    const { diameter, volume } = beamSizeDto;
+    const { diameter, volume, length } = beamSizeDto;
 
     const beamSize = await this.beamSizeRepository.findByPk(beamSizeId);
 
@@ -59,6 +66,7 @@ export class BeamSizeService {
       where: {
         diameter,
         volume,
+        length,
       },
     });
 
@@ -71,6 +79,7 @@ export class BeamSizeService {
 
     beamSize.diameter = diameter;
     beamSize.volume = volume;
+    beamSize.length = length;
 
     await beamSize.save();
 
@@ -79,6 +88,15 @@ export class BeamSizeService {
 
   async getAllBeamSizes() {
     const beamSizes = await this.beamSizeRepository.findAll({
+      order: [['diameter', 'ASC']],
+    });
+
+    return beamSizes;
+  }
+
+  async getAllBeamSizesByLength(length: number) {
+    const beamSizes = await this.beamSizeRepository.findAll({
+      where: { length },
       order: [['diameter', 'ASC']],
     });
 
@@ -102,5 +120,9 @@ export class BeamSizeService {
     const beamSize = await this.beamSizeRepository.findByPk(beamSizeId);
 
     return beamSize;
+  }
+
+  async deleteAllBeamSizes() {
+    await this.beamSizeRepository.truncate({ cascade: true });
   }
 }
