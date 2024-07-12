@@ -80,7 +80,7 @@ export class WoodShipmentController {
 
   @ApiOperation({
     summary: `Получение отгрузок по состоянию доски (сырая/сухая) для страницы 
-    поступлений для конкретного дня (таблица + санберст)`,
+    отгрузок для конкретного дня (таблица)`,
   })
   @Roles('SUPERADMIN', 'ADMIN', 'USER')
   @UseGuards(RolesGuard)

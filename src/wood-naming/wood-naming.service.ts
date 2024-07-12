@@ -4,6 +4,7 @@ import { WoodNaming } from './wood-naming.model';
 import { CreateWoodNamingDto } from './dtos/create-wood-naming.dto';
 import { WoodTypeService } from 'src/wood-type/wood-type.service';
 import { WoodType } from 'src/wood-type/wood-type.model';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class WoodNamingService {
@@ -138,6 +139,43 @@ export class WoodNamingService {
 
   async findWoodNamingById(woodNamingId: number) {
     const woodNaming = await this.woodNamingRepository.findByPk(woodNamingId);
+
+    return woodNaming;
+  }
+
+  async findWoodNamingByBeamParams({
+    length,
+    woodTypeId,
+    diameter,
+  }: {
+    diameter: number;
+    length: number;
+    woodTypeId: number;
+  }) {
+    const diameterParams =
+      // 14см - максимальный диаметр баланса
+      diameter === 14
+        ? {
+            maxDiameter: {
+              [Op.lte]: diameter,
+            },
+          }
+        : {
+            minDiameter: {
+              [Op.lte]: diameter,
+            },
+            maxDiameter: {
+              [Op.gte]: diameter,
+            },
+          };
+
+    const woodNaming = await this.woodNamingRepository.findOne({
+      where: {
+        length,
+        woodTypeId,
+        ...diameterParams,
+      },
+    });
 
     return woodNaming;
   }
