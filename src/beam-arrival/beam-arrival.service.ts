@@ -1,13 +1,13 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { BeamShipment } from './beam-shipment.model';
-import { BuyerService } from 'src/buyer/buyer.service';
+import { BeamArrival } from './beam-arrival.model';
+import { SupplierService } from 'src/supplier/supplier.service';
 import { WoodNamingService } from 'src/wood-naming/wood-naming.service';
 import { WoodTypeService } from 'src/wood-type/wood-type.service';
-import { CreateBeamShipmentDto } from './dtos/create-beam-shipment.dto';
-import { UpdateBeamShipmentDto } from './dtos/update-beam-shipment.dto';
+import { CreateBeamArrivalDto } from './dtos/create-beam-arrival.dto';
+import { UpdateBeamArrivalDto } from './dtos/update-beam-arrival.dto';
 import { BeamSizeService } from 'src/beam-size/beam-size.service';
-import { Buyer } from 'src/buyer/buyer.model';
+import { Supplier } from 'src/supplier/supplier.model';
 import { WoodType } from 'src/wood-type/wood-type.model';
 
 import { Op, Sequelize } from 'sequelize';
@@ -16,31 +16,39 @@ import { WoodNaming } from 'src/wood-naming/wood-naming.model';
 import { BeamSize } from 'src/beam-size/beam-size.model';
 
 @Injectable()
-export class BeamShipmentService {
+export class BeamArrivalService {
   constructor(
-    @InjectModel(BeamShipment)
-    private beamShipmentRepository: typeof BeamShipment,
-    private buyerService: BuyerService,
+    @InjectModel(BeamArrival)
+    private beamArrivalRepository: typeof BeamArrival,
+    private supplierService: SupplierService,
     private woodNamingService: WoodNamingService,
     private woodTypeService: WoodTypeService,
     private beamSizeService: BeamSizeService,
   ) {}
 
-  async createBeamShipment({
-    beamShipmentDto,
-    buyer,
+  async createBeamArrival({
+    beamArrivalDto,
+    supplier,
     woodType,
   }: {
-    beamShipmentDto: CreateBeamShipmentDto;
-    buyer: Buyer | null;
+    beamArrivalDto: CreateBeamArrivalDto;
+    supplier: Supplier | null;
     woodType: WoodType | null;
   }) {
-    const { date, buyerId, woodTypeId, volume, length, beamSizeId, amount } =
-      beamShipmentDto;
+    const {
+      date,
+      supplierId,
+      deliveryMethod,
+      woodTypeId,
+      volume,
+      length,
+      beamSizeId,
+      amount,
+    } = beamArrivalDto;
 
     if (!volume && !beamSizeId && !amount) {
       // Хотя бы один вариант (volume - для баланса, beamSizeId & amount - для пиловочника) должен присутствовать
-      return `Для записи отгрузки не были предоставлены объем или диаметр с количеством. Запись не была создана`;
+      return `Для записи поступления не были предоставлены объем или диаметр с количеством. Запись не была создана`;
     }
 
     let foundBeamSize = null;
@@ -50,7 +58,7 @@ export class BeamShipmentService {
 
       if (!beamSize) {
         // Размер леса не найден
-        return `Выбранный размер леса не найден. Запись об отгрузке не была создана`;
+        return `Выбранный размер леса не найден. Запись о поступлении не была создана`;
       }
 
       foundBeamSize = beamSize;
@@ -67,7 +75,8 @@ export class BeamShipmentService {
     if (!correspondingWoodNaming) {
       // Условное обозначение с выбранными параметрами не найдено
       return `Для выбранного диаметра (${foundBeamSize.diameter} см), 
-      породы (${woodType.name.toLowerCase()}) и длины (${length} м) нет условного обозначения. Запись об отгрузке не была создана.`;
+      породы (${woodType.name.toLowerCase()}) и длины (${length} м) нет условного обозначения. 
+      Запись о поступлении не была создана.`;
     }
 
     // Объем считается по-разному, в зависимости от того, создается ли запись баланса или пиловочника
@@ -75,44 +84,45 @@ export class BeamShipmentService {
       ? volume
       : foundBeamSize.volume * amount;
 
-    const beamShipment = await this.beamShipmentRepository.create({
+    const beamArrival = await this.beamArrivalRepository.create({
       date,
       ...(amount ? { amount } : {}),
+      ...(deliveryMethod ? { deliveryMethod } : {}),
       volume: Number(totalRecordVolume.toFixed(4)),
     });
 
     if (beamSizeId) {
-      await beamShipment.$set('beamSize', beamSizeId);
-      beamShipment.beamSize = foundBeamSize;
+      await beamArrival.$set('beamSize', beamSizeId);
+      beamArrival.beamSize = foundBeamSize;
     }
 
-    if (buyerId) {
-      await beamShipment.$set('buyer', buyerId);
-      beamShipment.buyer = buyer;
+    if (supplierId) {
+      await beamArrival.$set('supplier', supplierId);
+      beamArrival.supplier = supplier;
     }
 
-    await beamShipment.$set('woodType', woodTypeId);
-    beamShipment.woodType = woodType;
+    await beamArrival.$set('woodType', woodTypeId);
+    beamArrival.woodType = woodType;
 
-    await beamShipment.$set('woodNaming', correspondingWoodNaming.id);
-    beamShipment.woodNaming = correspondingWoodNaming;
+    await beamArrival.$set('woodNaming', correspondingWoodNaming.id);
+    beamArrival.woodNaming = correspondingWoodNaming;
   }
 
-  async createBeamShipments(beamShipmentDtos: CreateBeamShipmentDto[]) {
-    if (beamShipmentDtos.length === 0) {
+  async createBeamArrivals(beamArrivalDtos: CreateBeamArrivalDto[]) {
+    if (beamArrivalDtos.length === 0) {
       return [];
     }
 
-    const { buyerId, woodTypeId } = {
-      buyerId: beamShipmentDtos[0].buyerId,
-      woodTypeId: beamShipmentDtos[0].woodTypeId,
+    const { supplierId, woodTypeId } = {
+      supplierId: beamArrivalDtos[0].supplierId,
+      woodTypeId: beamArrivalDtos[0].woodTypeId,
     };
 
-    const buyer = buyerId
-      ? await this.buyerService.findBuyerById(buyerId)
+    const supplier = supplierId
+      ? await this.supplierService.findSupplierById(supplierId)
       : null;
 
-    if (buyerId && !buyer) {
+    if (supplierId && !supplier) {
       throw new HttpException(
         'Выбранный покупатель не найден',
         HttpStatus.NOT_FOUND,
@@ -128,13 +138,12 @@ export class BeamShipmentService {
       );
     }
 
-    // Проверка на наличие условного обозначения с необходимым диапазоном диаметров
     const errors = (
       await Promise.all(
-        beamShipmentDtos.map(async (beamShipmentDto) => {
-          return await this.createBeamShipment({
-            beamShipmentDto,
-            buyer,
+        beamArrivalDtos.map(async (beamArrivalDto) => {
+          return await this.createBeamArrival({
+            beamArrivalDto,
+            supplier,
             woodType,
           });
         }),
@@ -148,23 +157,23 @@ export class BeamShipmentService {
     return [];
   }
 
-  async editBeamShipment(
-    beamShipmentId: number,
-    beamShipmentDto: UpdateBeamShipmentDto,
+  async editBeamArrival(
+    beamArrivalId: number,
+    beamArrivalDto: UpdateBeamArrivalDto,
   ) {
-    const beamShipment = await this.beamShipmentRepository.findByPk(
-      beamShipmentId,
+    const beamArrival = await this.beamArrivalRepository.findByPk(
+      beamArrivalId,
       { include: [BeamSize] },
     );
 
-    if (!beamShipment) {
+    if (!beamArrival) {
       throw new HttpException(
         'Выбранныя отгрузка сырья не найдена',
         HttpStatus.NOT_FOUND,
       );
     }
 
-    const { amount, volume } = beamShipmentDto;
+    const { amount, volume } = beamArrivalDto;
 
     if (!amount && !volume) {
       throw new HttpException(
@@ -174,22 +183,22 @@ export class BeamShipmentService {
     }
 
     if (amount) {
-      beamShipment.amount = amount;
-      beamShipment.volume = Number(
-        (amount * beamShipment.beamSize.volume).toFixed(4),
+      beamArrival.amount = amount;
+      beamArrival.volume = Number(
+        (amount * beamArrival.beamSize.volume).toFixed(4),
       );
     }
 
     if (volume) {
-      beamShipment.volume = volume;
+      beamArrival.volume = volume;
     }
 
-    await beamShipment.save();
+    await beamArrival.save();
 
-    return beamShipment;
+    return beamArrival;
   }
 
-  async getAllBeamShipments({
+  async getAllBeamArrivals({
     startDate,
     endDate,
   }: {
@@ -222,10 +231,10 @@ export class BeamShipmentService {
       );
     }
 
-    const beamShipments = await this.beamShipmentRepository.findAll({
-      include: [Buyer, WoodNaming, WoodType, BeamSize],
+    const beamArrivals = await this.beamArrivalRepository.findAll({
+      include: [Supplier, WoodNaming, WoodType, BeamSize],
       attributes: {
-        exclude: ['buyerId', 'woodNamingId', 'woodTypeId', 'beamSizeId'],
+        exclude: ['supplierId', 'woodNamingId', 'woodTypeId', 'beamSizeId'],
       },
       where: {
         ...(startDate && endDate
@@ -252,17 +261,17 @@ export class BeamShipmentService {
 
     let totalVolume = 0;
 
-    beamShipments.forEach((beamShipment) => {
-      totalVolume += beamShipment.volume;
+    beamArrivals.forEach((beamArrival) => {
+      totalVolume += beamArrival.volume;
     });
 
     return {
-      data: beamShipments,
+      data: beamArrivals,
       totalVolume: Number(totalVolume.toFixed(2)),
     };
   }
 
-  async getBeamShipmentStatsForDay({ date }: { date: string }) {
+  async getBeamArrivalStatsForDay({ date }: { date: string }) {
     if (!date) {
       throw new HttpException(
         'Query параметр date обязателен для запроса',
@@ -270,24 +279,24 @@ export class BeamShipmentService {
       );
     }
 
-    return this.getAllBeamShipments({ startDate: date, endDate: date });
+    return this.getAllBeamArrivals({ startDate: date, endDate: date });
   }
 
-  async deleteBeamShipment(beamShipmentId: number) {
-    const beamShipment =
-      await this.beamShipmentRepository.findByPk(beamShipmentId);
+  async deleteBeamArrival(beamArrivalId: number) {
+    const beamArrival =
+      await this.beamArrivalRepository.findByPk(beamArrivalId);
 
-    if (!beamShipment) {
+    if (!beamArrival) {
       throw new HttpException(
         'Выбранная отгрузка не найдена',
         HttpStatus.NOT_FOUND,
       );
     }
 
-    await beamShipment.destroy();
+    await beamArrival.destroy();
   }
 
-  async deleteAllBeamShipment() {
-    await this.beamShipmentRepository.truncate({ cascade: true });
+  async deleteAllBeamArrival() {
+    await this.beamArrivalRepository.truncate({ cascade: true });
   }
 }

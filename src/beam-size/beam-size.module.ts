@@ -11,7 +11,7 @@ import { BeamShipment } from 'src/beam-shipment/beam-shipment.model';
   providers: [BeamSizeService],
   controllers: [BeamSizeController],
   imports: [
-    SequelizeModule.forFeature([BeamSize, BeamIn, BeamShipment]),
+    SequelizeModule.forFeature([BeamSize, BeamIn, BeamShipment, BeamShipment]),
     AuthModule,
   ],
   exports: [BeamSizeService],
