@@ -7,12 +7,18 @@ import { WorkshopDailyData } from 'src/workshop-daily-data/workshop-daily-data.m
 import { AuthModule } from 'src/auth/auth.module';
 import { WoodType } from 'src/wood-type/wood-type.model';
 import { WoodTypeModule } from 'src/wood-type/wood-type.module';
+import { BeamShipment } from 'src/beam-shipment/beam-shipment.model';
 
 @Module({
   controllers: [WoodNamingController],
   providers: [WoodNamingService],
   imports: [
-    SequelizeModule.forFeature([WoodNaming, WorkshopDailyData, WoodType]),
+    SequelizeModule.forFeature([
+      WoodNaming,
+      WorkshopDailyData,
+      WoodType,
+      BeamShipment,
+    ]),
     AuthModule,
     WoodTypeModule,
   ],

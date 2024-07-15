@@ -5,11 +5,15 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { BeamSize } from './beam-size.model';
 import { BeamIn } from 'src/beam-in/beam-in.model';
 import { AuthModule } from 'src/auth/auth.module';
+import { BeamShipment } from 'src/beam-shipment/beam-shipment.model';
 
 @Module({
   providers: [BeamSizeService],
   controllers: [BeamSizeController],
-  imports: [SequelizeModule.forFeature([BeamSize, BeamIn]), AuthModule],
+  imports: [
+    SequelizeModule.forFeature([BeamSize, BeamIn, BeamShipment]),
+    AuthModule,
+  ],
   exports: [BeamSizeService],
 })
 export class BeamSizeModule {}

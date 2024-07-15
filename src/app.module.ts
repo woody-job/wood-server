@@ -47,6 +47,8 @@ import { BuyerModule } from './buyer/buyer.module';
 import { Buyer } from './buyer/buyer.model';
 import { PersonInChargeModule } from './person-in-charge/person-in-charge.module';
 import { PersonInCharge } from './person-in-charge/person-in-charge.model';
+import { BeamShipmentModule } from './beam-shipment/beam-shipment.module';
+import { BeamShipment } from './beam-shipment/beam-shipment.model';
 
 @Module({
   controllers: [DataManagementController],
@@ -94,6 +96,7 @@ import { PersonInCharge } from './person-in-charge/person-in-charge.model';
         Supplier,
         Buyer,
         PersonInCharge,
+        BeamShipment,
       ],
       autoLoadModels: true,
       synchronize: true,
@@ -121,6 +124,7 @@ import { PersonInCharge } from './person-in-charge/person-in-charge.model';
     SupplierModule,
     BuyerModule,
     PersonInChargeModule,
+    BeamShipmentModule,
   ],
 })
 export class AppModule {}
