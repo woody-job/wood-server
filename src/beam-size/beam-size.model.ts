@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
+import { BeamArrival } from 'src/beam-arrival/beam-arrival.model';
 import { BeamIn } from 'src/beam-in/beam-in.model';
 import { BeamShipment } from 'src/beam-shipment/beam-shipment.model';
 
@@ -57,4 +58,7 @@ export class BeamSize extends Model<BeamSize, BeamSizeCreationAttrs> {
 
   @HasMany(() => BeamShipment)
   beamShipments: BeamShipment[];
+
+  @HasMany(() => BeamArrival)
+  beamArrivals: BeamArrival[];
 }

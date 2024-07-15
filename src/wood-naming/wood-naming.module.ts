@@ -8,6 +8,7 @@ import { AuthModule } from 'src/auth/auth.module';
 import { WoodType } from 'src/wood-type/wood-type.model';
 import { WoodTypeModule } from 'src/wood-type/wood-type.module';
 import { BeamShipment } from 'src/beam-shipment/beam-shipment.model';
+import { BeamArrival } from 'src/beam-arrival/beam-arrival.model';
 
 @Module({
   controllers: [WoodNamingController],
@@ -18,6 +19,7 @@ import { BeamShipment } from 'src/beam-shipment/beam-shipment.model';
       WorkshopDailyData,
       WoodType,
       BeamShipment,
+      BeamArrival,
     ]),
     AuthModule,
     WoodTypeModule,

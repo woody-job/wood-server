@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
+import { BeamArrival } from 'src/beam-arrival/beam-arrival.model';
 import { WoodArrival } from 'src/wood-arrival/wood-arrival.model';
 
 interface SupplierCreationAttrs {
@@ -30,4 +31,7 @@ export class Supplier extends Model<Supplier, SupplierCreationAttrs> {
 
   @HasMany(() => WoodArrival)
   woodArrivals: WoodArrival[];
+
+  @HasMany(() => BeamArrival)
+  beamArrivals: BeamArrival[];
 }
