@@ -10,6 +10,7 @@ import {
 } from 'sequelize-typescript';
 import { BeamArrival } from 'src/beam-arrival/beam-arrival.model';
 import { BeamShipment } from 'src/beam-shipment/beam-shipment.model';
+import { BeamWarehouse } from 'src/beam-warehouse/beam-warehouse.model';
 import { WoodType } from 'src/wood-type/wood-type.model';
 import { WorkshopDailyData } from 'src/workshop-daily-data/workshop-daily-data.model';
 
@@ -92,4 +93,7 @@ export class WoodNaming extends Model<WoodNaming, WoodNamingCreationAttrs> {
 
   @HasMany(() => BeamArrival)
   beamArrivals: BeamArrival[];
+
+  @HasMany(() => BeamWarehouse)
+  beamWarehouseRecords: BeamWarehouse[];
 }

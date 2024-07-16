@@ -12,6 +12,7 @@ import { WoodTypeModule } from 'src/wood-type/wood-type.module';
 import { BeamSize } from 'src/beam-size/beam-size.model';
 import { BeamSizeModule } from 'src/beam-size/beam-size.module';
 import { AuthModule } from 'src/auth/auth.module';
+import { BeamWarehouseModule } from 'src/beam-warehouse/beam-warehouse.module';
 
 @Module({
   controllers: [BeamArrivalController],
@@ -27,6 +28,7 @@ import { AuthModule } from 'src/auth/auth.module';
     WoodNamingModule,
     WoodTypeModule,
     BeamSizeModule,
+    BeamWarehouseModule,
     AuthModule,
   ],
   providers: [BeamArrivalService],
