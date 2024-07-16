@@ -14,6 +14,7 @@ import { Op, Sequelize } from 'sequelize';
 import * as moment from 'moment';
 import { WoodNaming } from 'src/wood-naming/wood-naming.model';
 import { BeamSize } from 'src/beam-size/beam-size.model';
+import { BeamWarehouseService } from 'src/beam-warehouse/beam-warehouse.service';
 
 @Injectable()
 export class BeamArrivalService {
@@ -24,7 +25,69 @@ export class BeamArrivalService {
     private woodNamingService: WoodNamingService,
     private woodTypeService: WoodTypeService,
     private beamSizeService: BeamSizeService,
+    private beamWarehouseService: BeamWarehouseService,
   ) {}
+
+  async updateWarehouse({
+    woodNamingId,
+    beamSizeId,
+    amount = 0,
+    volume = 0,
+    action = 'add',
+    isCreate = false,
+  }: {
+    woodNamingId: number;
+    beamSizeId?: number;
+    amount?: number;
+    volume?: number;
+    action?: 'add' | 'subtract';
+    isCreate?: boolean;
+  }) {
+    if (isCreate) {
+      await this.beamWarehouseService.createWarehouseRecord({
+        ...(amount ? { amount } : {}),
+        ...(volume ? { volume } : {}),
+        ...(beamSizeId ? { beamSizeId } : {}),
+        woodNamingId,
+      });
+
+      return;
+    }
+
+    const existentWarehouseRecord =
+      await this.beamWarehouseService.findWarehouseRecordByBeamParams({
+        woodNamingId,
+        ...(beamSizeId ? { beamSizeId } : {}),
+      });
+
+    if (!existentWarehouseRecord) {
+      return;
+    }
+
+    let newAmount = existentWarehouseRecord.amount;
+    let newVolume = Number(existentWarehouseRecord.volume);
+
+    if (isCreate) {
+      newAmount = existentWarehouseRecord.amount + amount;
+      newVolume = Number(existentWarehouseRecord.volume) + volume;
+    } else {
+      if (action === 'add') {
+        newAmount = existentWarehouseRecord.amount + amount;
+        newVolume = Number(existentWarehouseRecord.volume) + volume;
+      }
+
+      if (action === 'subtract') {
+        newAmount = existentWarehouseRecord.amount - amount;
+        newVolume = Number(existentWarehouseRecord.volume) - volume;
+      }
+    }
+
+    await this.beamWarehouseService.updateWarehouseRecord({
+      ...(beamSizeId ? { beamSizeId } : {}),
+      ...(beamSizeId ? { amount: newAmount } : { volume: newVolume }),
+      woodNamingId,
+    });
+  }
 
   async createBeamArrival({
     beamArrivalDto,
@@ -106,6 +169,14 @@ export class BeamArrivalService {
 
     await beamArrival.$set('woodNaming', correspondingWoodNaming.id);
     beamArrival.woodNaming = correspondingWoodNaming;
+
+    // Пополнить запись на складе сырья
+    await this.updateWarehouse({
+      woodNamingId: correspondingWoodNaming.id,
+      isCreate: true,
+      ...(beamSizeId ? { beamSizeId } : {}),
+      ...(beamSizeId ? { amount } : { volume }),
+    });
   }
 
   async createBeamArrivals(beamArrivalDtos: CreateBeamArrivalDto[]) {
@@ -175,6 +246,9 @@ export class BeamArrivalService {
 
     const { amount, volume } = beamArrivalDto;
 
+    const oldBeamArrivalAmount = beamArrival.amount;
+    const oldBeamArrivalVolume = beamArrival.volume;
+
     if (!amount && !volume) {
       throw new HttpException(
         'Один из параметров (количество или объем) должен присутствовать в теле',
@@ -194,6 +268,38 @@ export class BeamArrivalService {
     }
 
     await beamArrival.save();
+
+    // Обновить запись на складе сырья
+    let newAmount = oldBeamArrivalAmount;
+    let newVolume = oldBeamArrivalVolume;
+    let action: 'add' | 'subtract' = 'subtract';
+
+    if (oldBeamArrivalAmount > beamArrival.amount) {
+      newAmount = oldBeamArrivalAmount - beamArrival.amount;
+      action = 'subtract';
+    }
+
+    if (oldBeamArrivalVolume > beamArrival.volume) {
+      newVolume = oldBeamArrivalVolume - beamArrival.volume;
+      action = 'subtract';
+    }
+
+    if (oldBeamArrivalAmount < beamArrival.amount) {
+      newAmount = beamArrival.amount - oldBeamArrivalAmount;
+      action = 'add';
+    }
+
+    if (oldBeamArrivalVolume < beamArrival.volume) {
+      newVolume = beamArrival.volume - oldBeamArrivalVolume;
+      action = 'add';
+    }
+
+    await this.updateWarehouse({
+      woodNamingId: beamArrival.woodNamingId,
+      action,
+      ...(beamArrival.beamSize ? { beamSizeId: beamArrival.beamSize.id } : {}),
+      ...(beamArrival.beamSize ? { amount: newAmount } : { volume: newVolume }),
+    });
 
     return beamArrival;
   }
@@ -283,8 +389,10 @@ export class BeamArrivalService {
   }
 
   async deleteBeamArrival(beamArrivalId: number) {
-    const beamArrival =
-      await this.beamArrivalRepository.findByPk(beamArrivalId);
+    const beamArrival = await this.beamArrivalRepository.findByPk(
+      beamArrivalId,
+      { include: [BeamSize] },
+    );
 
     if (!beamArrival) {
       throw new HttpException(
@@ -294,6 +402,16 @@ export class BeamArrivalService {
     }
 
     await beamArrival.destroy();
+
+    // Изменить запись на складе
+    await this.updateWarehouse({
+      woodNamingId: beamArrival.woodNamingId,
+      beamSizeId: beamArrival.beamSizeId,
+      action: 'subtract',
+      ...(beamArrival.beamSize
+        ? { amount: beamArrival.amount }
+        : { volume: beamArrival.volume }),
+    });
   }
 
   async deleteAllBeamArrival() {

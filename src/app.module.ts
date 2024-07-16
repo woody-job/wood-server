@@ -51,6 +51,8 @@ import { BeamShipmentModule } from './beam-shipment/beam-shipment.module';
 import { BeamShipment } from './beam-shipment/beam-shipment.model';
 import { BeamArrival } from './beam-arrival/beam-arrival.model';
 import { BeamArrivalModule } from './beam-arrival/beam-arrival.module';
+import { BeamWarehouseModule } from './beam-warehouse/beam-warehouse.module';
+import { BeamWarehouse } from './beam-warehouse/beam-warehouse.model';
 
 @Module({
   controllers: [DataManagementController],
@@ -100,6 +102,7 @@ import { BeamArrivalModule } from './beam-arrival/beam-arrival.module';
         PersonInCharge,
         BeamShipment,
         BeamArrival,
+        BeamWarehouse,
       ],
       autoLoadModels: true,
       synchronize: true,
@@ -129,6 +132,7 @@ import { BeamArrivalModule } from './beam-arrival/beam-arrival.module';
     PersonInChargeModule,
     BeamShipmentModule,
     BeamArrivalModule,
+    BeamWarehouseModule,
   ],
 })
 export class AppModule {}

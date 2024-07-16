@@ -1,24 +1,22 @@
 import { Controller, Delete, Get, Param, UseGuards } from '@nestjs/common';
-import { WarehouseService } from './warehouse.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { BeamWarehouseService } from './beam-warehouse.service';
 import { Roles } from 'src/auth/roles-auth.decorator';
 import { RolesGuard } from 'src/auth/roles.guard';
 
-@ApiTags('Склад доски')
-@Controller('warehouse')
-export class WarehouseController {
-  constructor(private warehouseService: WarehouseService) {}
+@ApiTags('Склад сырья')
+@Controller('beam-warehouse')
+export class BeamWarehouseController {
+  constructor(private beamWarehouseService: BeamWarehouseService) {}
 
   @ApiOperation({
     summary: 'Получение доски на складе по ее состоянию (сырая/сухая)',
   })
   @Roles('SUPERADMIN', 'ADMIN', 'USER')
   @UseGuards(RolesGuard)
-  @Get('/:woodConditionId')
-  getAll(@Param('woodConditionId') woodConditionId: string) {
-    return this.warehouseService.getAllWarehouseRecordsByWoodCondition(
-      Number(woodConditionId),
-    );
+  @Get()
+  getAll() {
+    return this.beamWarehouseService.getAllWarehouseRecords();
   }
 
   @ApiOperation({
@@ -28,7 +26,7 @@ export class WarehouseController {
   @UseGuards(RolesGuard)
   @Get('/get/stats')
   getStats() {
-    return this.warehouseService.getOverralWarehouseStats();
+    return this.beamWarehouseService.getOverralWarehouseStats();
   }
 
   @ApiOperation({ summary: 'Удаление записи склада' })
@@ -36,7 +34,7 @@ export class WarehouseController {
   @UseGuards(RolesGuard)
   @Delete('/:warehouseRecordId')
   delete(@Param('warehouseRecordId') warehouseRecordId: string) {
-    return this.warehouseService.deleteWarehouseRecord(
+    return this.beamWarehouseService.deleteWarehouseRecord(
       Number(warehouseRecordId),
     );
   }

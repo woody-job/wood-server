@@ -3,6 +3,7 @@ import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
 import { BeamArrival } from 'src/beam-arrival/beam-arrival.model';
 import { BeamIn } from 'src/beam-in/beam-in.model';
 import { BeamShipment } from 'src/beam-shipment/beam-shipment.model';
+import { BeamWarehouse } from 'src/beam-warehouse/beam-warehouse.model';
 
 interface BeamSizeCreationAttrs {
   diameter: number;
@@ -61,4 +62,7 @@ export class BeamSize extends Model<BeamSize, BeamSizeCreationAttrs> {
 
   @HasMany(() => BeamArrival)
   beamArrivals: BeamArrival[];
+
+  @HasMany(() => BeamWarehouse)
+  beamWarehouseRecords: BeamWarehouse[];
 }
