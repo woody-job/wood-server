@@ -17,6 +17,13 @@ export class AddBeamInDto {
   readonly beamSizeId: number;
 
   @ApiProperty({
+    example: '1',
+    description: 'id условного обозначения',
+  })
+  @IsNumber({}, { message: 'Условное обозначение выбрано некорректно' })
+  readonly woodNamingId: number;
+
+  @ApiProperty({
     example: '12',
     description: 'Количество',
   })

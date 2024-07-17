@@ -9,16 +9,21 @@ import { BeamSize } from 'src/beam-size/beam-size.model';
 import { BeamSizeModule } from 'src/beam-size/beam-size.module';
 import { AuthModule } from 'src/auth/auth.module';
 import { WorkshopOutModule } from 'src/workshop-out/workshop-out.module';
+import { BeamWarehouseModule } from 'src/beam-warehouse/beam-warehouse.module';
+import { WoodNamingModule } from 'src/wood-naming/wood-naming.module';
+import { WoodNaming } from 'src/wood-naming/wood-naming.model';
 
 @Module({
   controllers: [BeamInController],
   providers: [BeamInService],
   imports: [
-    SequelizeModule.forFeature([BeamIn, Workshop, BeamSize]),
+    SequelizeModule.forFeature([BeamIn, Workshop, BeamSize, WoodNaming]),
     WorkshopModule,
     BeamSizeModule,
     AuthModule,
     forwardRef(() => WorkshopOutModule),
+    BeamWarehouseModule,
+    WoodNamingModule,
   ],
   exports: [BeamInService],
 })

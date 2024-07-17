@@ -8,10 +8,13 @@ import {
   Table,
 } from 'sequelize-typescript';
 import { BeamSize } from 'src/beam-size/beam-size.model';
+import { WoodNaming } from 'src/wood-naming/wood-naming.model';
 import { Workshop } from 'src/workshop/workshop.model';
 
 interface BeamInCreationAttrs {
   workshopId: number;
+  beamSizeId: number;
+  woodNamingId: number;
   amount: number;
   date: string;
 }
@@ -57,6 +60,17 @@ export class BeamIn extends Model<BeamIn, BeamInCreationAttrs> {
   })
   @BelongsTo(() => BeamSize)
   beamSize: BeamSize;
+
+  @ApiProperty({
+    example: '1',
+    description: 'id условного обозначения леса',
+  })
+  @ForeignKey(() => WoodNaming)
+  @Column({ field: 'wood_naming_id', allowNull: true })
+  woodNamingId: number;
+
+  @BelongsTo(() => WoodNaming)
+  woodNaming: WoodNaming;
 
   @ApiProperty({
     example: '1',
