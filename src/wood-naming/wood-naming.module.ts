@@ -10,6 +10,7 @@ import { WoodTypeModule } from 'src/wood-type/wood-type.module';
 import { BeamShipment } from 'src/beam-shipment/beam-shipment.model';
 import { BeamArrival } from 'src/beam-arrival/beam-arrival.model';
 import { BeamWarehouse } from 'src/beam-warehouse/beam-warehouse.model';
+import { BeamIn } from 'src/beam-in/beam-in.model';
 
 @Module({
   controllers: [WoodNamingController],
@@ -22,6 +23,7 @@ import { BeamWarehouse } from 'src/beam-warehouse/beam-warehouse.model';
       BeamShipment,
       BeamArrival,
       BeamWarehouse,
+      BeamIn,
     ]),
     AuthModule,
     WoodTypeModule,
