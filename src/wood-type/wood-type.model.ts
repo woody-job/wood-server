@@ -1,8 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
+import { BeamArrival } from 'src/beam-arrival/beam-arrival.model';
+import { BeamShipment } from 'src/beam-shipment/beam-shipment.model';
 import { DryerChamberData } from 'src/dryer-chamber-data/dryer-chamber-data.model';
 import { Warehouse } from 'src/warehouse/warehouse.model';
 import { WoodArrival } from 'src/wood-arrival/wood-arrival.model';
+import { WoodNaming } from 'src/wood-naming/wood-naming.model';
 import { WoodShipment } from 'src/wood-shipment/wood-shipment.model';
 import { WorkshopOut } from 'src/workshop-out/workshop-out.model';
 
@@ -46,4 +49,13 @@ export class WoodType extends Model<WoodType, WoodTypeCreationAttrs> {
 
   @HasMany(() => Warehouse)
   warehouseDatas: Warehouse[];
+
+  @HasMany(() => WoodNaming)
+  woodNamings: WoodNaming[];
+
+  @HasMany(() => BeamShipment)
+  beamShipments: BeamShipment[];
+
+  @HasMany(() => BeamArrival)
+  beamArrivals: BeamArrival[];
 }

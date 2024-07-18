@@ -25,8 +25,8 @@ export class WoodShipmentController {
   @Roles('SUPERADMIN', 'ADMIN')
   @UseGuards(RolesGuard)
   @Post()
-  create(@Body() woodShipmentDto: CreateWoodShipmentDto) {
-    return this.woodShipmentService.createWoodShipment(woodShipmentDto);
+  create(@Body() woodShipmentDtos: CreateWoodShipmentDto[]) {
+    return this.woodShipmentService.createWoodShipments(woodShipmentDtos);
   }
 
   @ApiOperation({ summary: 'Редактирование отгрузки доски' })
@@ -80,7 +80,7 @@ export class WoodShipmentController {
 
   @ApiOperation({
     summary: `Получение отгрузок по состоянию доски (сырая/сухая) для страницы 
-    поступлений для конкретного дня (таблица + санберст)`,
+    отгрузок для конкретного дня (таблица)`,
   })
   @Roles('SUPERADMIN', 'ADMIN', 'USER')
   @UseGuards(RolesGuard)

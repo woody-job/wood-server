@@ -16,6 +16,9 @@ import { BeamSizeService } from 'src/beam-size/beam-size.service';
 import { BeamSize } from 'src/beam-size/beam-size.model';
 import { UpdateBeamInDto } from './dtos/update-beam-in.dto';
 import { WorkshopOutService } from 'src/workshop-out/workshop-out.service';
+import { BeamWarehouseService } from 'src/beam-warehouse/beam-warehouse.service';
+import { WoodNamingService } from 'src/wood-naming/wood-naming.service';
+import { WoodNaming } from 'src/wood-naming/wood-naming.model';
 
 @Injectable()
 export class BeamInService {
@@ -26,10 +29,52 @@ export class BeamInService {
     private beamSizeService: BeamSizeService,
     @Inject(forwardRef(() => WorkshopOutService))
     private workshopOutService: WorkshopOutService,
+    private beamWarehouseService: BeamWarehouseService,
+    private woodNamingService: WoodNamingService,
   ) {}
 
+  async updateWarehouse({
+    woodNamingId,
+    beamSizeId,
+    amount = 0,
+    action = 'add',
+    errorMessage,
+  }: {
+    woodNamingId: number;
+    beamSizeId: number;
+    amount: number;
+    action?: 'add' | 'subtract';
+    errorMessage: string;
+  }) {
+    const existentWarehouseRecord =
+      await this.beamWarehouseService.findWarehouseRecordByBeamParams({
+        woodNamingId,
+        ...(beamSizeId ? { beamSizeId } : {}),
+      });
+
+    if (!existentWarehouseRecord) {
+      throw new HttpException(errorMessage, HttpStatus.BAD_REQUEST);
+    }
+
+    let newAmount = existentWarehouseRecord.amount;
+
+    if (action === 'add') {
+      newAmount = existentWarehouseRecord.amount + amount;
+    }
+
+    if (action === 'subtract') {
+      newAmount = existentWarehouseRecord.amount - amount;
+    }
+
+    await this.beamWarehouseService.updateWarehouseRecord({
+      beamSizeId,
+      amount: newAmount,
+      woodNamingId,
+    });
+  }
+
   async addBeamToWorkshop(beamInDto: AddBeamInDto) {
-    const { beamSizeId, date, amount, workshopId } = beamInDto;
+    const { beamSizeId, date, amount, workshopId, woodNamingId } = beamInDto;
 
     const momentDate = moment(date);
 
@@ -72,6 +117,37 @@ export class BeamInService {
       );
     }
 
+    const woodNaming =
+      await this.woodNamingService.findWoodNamingById(woodNamingId);
+
+    if (!woodNaming) {
+      throw new HttpException(
+        'Выбранное условное обозначение не найдено',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const isBeamSizeInWoodNamingBoundaries =
+      woodNaming.maxDiameter! >= beamSize.diameter &&
+      woodNaming.minDiameter! <= beamSize.diameter;
+
+    if (!isBeamSizeInWoodNamingBoundaries) {
+      throw new HttpException(
+        `Диаметр ${beamSize.diameter} см не подходит для выбранного обозначения`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Убрать бревна со склада сырья
+    await this.updateWarehouse({
+      woodNamingId: woodNaming.id,
+      action: 'subtract',
+      beamSizeId,
+      amount,
+      errorMessage:
+        'На складе нет леса с предоставленными параметрами. Запись не была создана',
+    });
+
     const beamIn = await this.beamInRepository.create({
       amount,
       date,
@@ -80,6 +156,9 @@ export class BeamInService {
     await beamIn.$set('beamSize', beamSizeId);
     beamIn.beamSize = beamSize;
 
+    await beamIn.$set('woodNaming', woodNamingId);
+    beamIn.woodNaming = woodNaming;
+
     await beamIn.$set('workshop', workshopId);
     beamIn.workshop = workshop;
 
@@ -87,7 +166,7 @@ export class BeamInService {
   }
 
   async editBeamGoneToWorkshop(beamInId: number, beamInDto: UpdateBeamInDto) {
-    const { beamSizeId, amount } = beamInDto;
+    const { amount } = beamInDto;
 
     const beamIn = await this.beamInRepository.findByPk(beamInId);
 
@@ -98,19 +177,30 @@ export class BeamInService {
       );
     }
 
-    const beamSize = await this.beamSizeService.findBeamSizeById(beamSizeId);
+    const oldBeamInAmount = beamIn.amount;
 
-    if (!beamSize) {
-      throw new HttpException(
-        'Выбранный размер не найден',
-        HttpStatus.NOT_FOUND,
-      );
+    // Обновить запись на складе сырья
+    let newAmount = oldBeamInAmount;
+    let action: 'add' | 'subtract' = 'subtract';
+
+    if (oldBeamInAmount > amount) {
+      newAmount = oldBeamInAmount - amount;
+      action = 'add';
     }
 
-    if (beamIn.beamSizeId !== beamSizeId) {
-      await beamIn.$set('beamSize', beamSizeId);
-      beamIn.beamSize = beamSize;
+    if (oldBeamInAmount < amount) {
+      newAmount = amount - oldBeamInAmount;
+      action = 'subtract';
     }
+
+    await this.updateWarehouse({
+      woodNamingId: beamIn.woodNamingId,
+      action,
+      beamSizeId: beamIn.beamSizeId,
+      amount: newAmount,
+      errorMessage:
+        'На складе нет леса с предоставленными параметрами. Запись не была изменена',
+    });
 
     beamIn.amount = amount;
     await beamIn.save();
@@ -143,9 +233,9 @@ export class BeamInService {
     const endDay = momentEndDate.date();
 
     const beamIns = await this.beamInRepository.findAll({
-      include: [BeamSize],
+      include: [BeamSize, WoodNaming],
       attributes: {
-        exclude: ['workshopId', 'beamSizeId'],
+        exclude: ['workshopId', 'beamSizeId', 'woodNamingId'],
       },
       where: {
         workshopId,
@@ -192,6 +282,16 @@ export class BeamInService {
         HttpStatus.NOT_FOUND,
       );
     }
+
+    // Изменить запись на складе
+    await this.updateWarehouse({
+      woodNamingId: beamIn.woodNamingId,
+      beamSizeId: beamIn.beamSizeId,
+      action: 'add',
+      amount: beamIn.amount,
+      errorMessage:
+        'На складе нет леса с предоставленными параметрами. Запись не была удалена',
+    });
 
     await beamIn.destroy();
   }

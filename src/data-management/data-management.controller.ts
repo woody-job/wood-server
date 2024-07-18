@@ -19,6 +19,14 @@ export class DataManagementController {
   }
 
   @ApiOperation({
+    summary: 'Обновление размеров леса. Переход на длину + объем по ГОСТу',
+  })
+  @Get('/update-beam-sizes')
+  updateBeamSizes() {
+    return this.dataManagementService.updateBeamSizes();
+  }
+
+  @ApiOperation({
     summary:
       'Удаление всех записей о работе предприятия (вход, выход, ежедневные данные цехов, поступления, отгрузки, склад, сушилки)',
   })

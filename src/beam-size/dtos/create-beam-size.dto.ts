@@ -4,7 +4,7 @@ import { IsDecimal, IsNumber } from 'class-validator';
 export class CreateBeamSizeDto {
   @ApiProperty({
     example: '12',
-    description: 'Диаметр бревна в метрах',
+    description: 'Диаметр бревна в сантиметрах',
   })
   @IsNumber({}, { message: 'Должен быть числом' })
   readonly diameter: number;
@@ -19,4 +19,10 @@ export class CreateBeamSizeDto {
     description: 'Объем бревна в м3',
   })
   readonly volume: number;
+
+  @ApiProperty({
+    example: '6',
+    description: 'Длина бревна в м',
+  })
+  readonly length: number;
 }

@@ -47,6 +47,12 @@ import { BuyerModule } from './buyer/buyer.module';
 import { Buyer } from './buyer/buyer.model';
 import { PersonInChargeModule } from './person-in-charge/person-in-charge.module';
 import { PersonInCharge } from './person-in-charge/person-in-charge.model';
+import { BeamShipmentModule } from './beam-shipment/beam-shipment.module';
+import { BeamShipment } from './beam-shipment/beam-shipment.model';
+import { BeamArrival } from './beam-arrival/beam-arrival.model';
+import { BeamArrivalModule } from './beam-arrival/beam-arrival.module';
+import { BeamWarehouseModule } from './beam-warehouse/beam-warehouse.module';
+import { BeamWarehouse } from './beam-warehouse/beam-warehouse.model';
 
 @Module({
   controllers: [DataManagementController],
@@ -67,7 +73,7 @@ import { PersonInCharge } from './person-in-charge/person-in-charge.model';
         ssl: process.env.NODE_ENV === 'development' ? false : true,
       },
       pool: {
-        max: 1000,
+        max: 10000,
         min: 0,
         acquire: 30 * 1000,
         idle: 10 * 1000,
@@ -94,6 +100,9 @@ import { PersonInCharge } from './person-in-charge/person-in-charge.model';
         Supplier,
         Buyer,
         PersonInCharge,
+        BeamShipment,
+        BeamArrival,
+        BeamWarehouse,
       ],
       autoLoadModels: true,
       synchronize: true,
@@ -121,6 +130,9 @@ import { PersonInCharge } from './person-in-charge/person-in-charge.model';
     SupplierModule,
     BuyerModule,
     PersonInChargeModule,
+    BeamShipmentModule,
+    BeamArrivalModule,
+    BeamWarehouseModule,
   ],
 })
 export class AppModule {}

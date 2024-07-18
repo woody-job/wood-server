@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
+import { BeamShipment } from 'src/beam-shipment/beam-shipment.model';
 import { WoodShipment } from 'src/wood-shipment/wood-shipment.model';
 
 interface BuyerCreationAttrs {
@@ -30,4 +31,7 @@ export class Buyer extends Model<Buyer, BuyerCreationAttrs> {
 
   @HasMany(() => WoodShipment)
   woodShipments: WoodShipment[];
+
+  @HasMany(() => BeamShipment)
+  beamShipments: BeamShipment[];
 }

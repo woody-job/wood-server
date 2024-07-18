@@ -231,11 +231,19 @@ export class WorkshopDailyDataService {
       // Итог на м3
       profitPerUnit: 0,
       // Сечение дня
+      dimensionId:
+        workshopDailyData && workshopDailyData.dimension
+          ? workshopDailyData.dimension.id
+          : null,
       dimensionOfTheDay:
         workshopDailyData && workshopDailyData.dimension
           ? `${workshopDailyData.dimension.width}x${workshopDailyData.dimension.thickness}x${workshopDailyData.dimension.length}`
           : null,
       // Лес дня (условное обозначение)
+      woodNamingId:
+        workshopDailyData && workshopDailyData.woodNaming
+          ? workshopDailyData.woodNaming.id
+          : null,
       woodNamingOfTheDay:
         workshopDailyData && workshopDailyData.woodNaming
           ? workshopDailyData.woodNaming.name
@@ -294,6 +302,8 @@ export class WorkshopDailyDataService {
       profitPerUnit: output.profitPerUnit
         ? Number(output.profitPerUnit.toFixed(2))
         : 0,
+      dimensionId: output.dimensionId,
+      woodNamingId: output.woodNamingId,
       dimensionOfTheDay: output.dimensionOfTheDay,
       woodNamingOfTheDay: output.woodNamingOfTheDay,
       totalVolume,
