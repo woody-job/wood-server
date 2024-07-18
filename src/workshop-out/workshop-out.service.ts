@@ -579,11 +579,10 @@ export class WorkshopOutService {
     }
 
     const momentStartDate = moment(startDate);
-    const now = momentStartDate.clone();
 
-    while (now.isSameOrBefore(endDate)) {
-      days.push(now.toISOString());
-      now.add(1, 'days');
+    while (momentStartDate.isSameOrBefore(endDate)) {
+      days.push(momentStartDate.toISOString());
+      momentStartDate.add(1, 'days');
     }
 
     if (days.length > 31) {
