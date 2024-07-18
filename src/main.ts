@@ -8,7 +8,7 @@ async function bootstrap() {
   const PORT = process.env.PORT || 5000;
   const app = await NestFactory.create(AppModule, { bodyParser: true });
 
-  moment.tz.setDefault('UTC');
+  // moment.tz.setDefault('UTC');
 
   // swagger setup
   const config = new DocumentBuilder()
