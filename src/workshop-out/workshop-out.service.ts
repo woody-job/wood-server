@@ -578,7 +578,6 @@ export class WorkshopOutService {
       );
     }
 
-    moment.tz.setDefault('Europe/Moscow');
     const momentStartDate = moment(startDate);
 
     while (momentStartDate.isSameOrBefore(endDate)) {
