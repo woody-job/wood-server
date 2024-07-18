@@ -15,7 +15,7 @@ import { DimensionService } from 'src/dimension/dimension.service';
 import { CreateWorkshopOutDto } from './dtos/create-workshop-out.dto';
 
 import { Op, Sequelize } from 'sequelize';
-import * as moment from 'moment';
+import moment from 'moment-timezone';
 import { WoodClass } from 'src/wood-class/wood-class.model';
 import { WoodType } from 'src/wood-type/wood-type.model';
 import { Dimension } from 'src/dimension/dimension.model';
@@ -578,7 +578,7 @@ export class WorkshopOutService {
       );
     }
 
-    const momentStartDate = moment(startDate);
+    const momentStartDate = moment.tz(startDate, 'Europe/Moscow');
 
     while (momentStartDate.isSameOrBefore(endDate)) {
       days.push(momentStartDate.toISOString());
