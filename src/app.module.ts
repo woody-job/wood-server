@@ -71,7 +71,9 @@ import { BeamWarehouse } from './beam-warehouse/beam-warehouse.model';
       database: process.env.POSTGRES_DATABASE,
       dialectOptions: {
         ssl: process.env.NODE_ENV === 'development' ? false : true,
+        useUTC: false,
       },
+      timezone: '+03:00',
       pool: {
         max: 10000,
         min: 0,
