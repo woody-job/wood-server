@@ -32,5 +32,6 @@ import { BeamWarehouseModule } from 'src/beam-warehouse/beam-warehouse.module';
     AuthModule,
   ],
   providers: [BeamArrivalService],
+  exports: [BeamArrivalService],
 })
 export class BeamArrivalModule {}

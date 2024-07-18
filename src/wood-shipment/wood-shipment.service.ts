@@ -81,10 +81,17 @@ export class WoodShipmentService {
     });
   }
 
-  async createWoodShipment(
-    woodShipmentDto: CreateWoodShipmentDto,
-    params?: { avoidDirectWarehouseChange: boolean },
-  ) {
+  async createWoodShipment({
+    woodShipmentDto,
+    woodCondition,
+    buyer,
+    personInCharge,
+  }: {
+    woodShipmentDto: CreateWoodShipmentDto;
+    woodCondition: WoodCondition;
+    buyer?: Buyer;
+    personInCharge?: PersonInCharge;
+  }) {
     const {
       date,
       amount,
@@ -98,16 +105,11 @@ export class WoodShipmentService {
       car,
     } = woodShipmentDto;
 
-    const { avoidDirectWarehouseChange = false } = params ?? {};
-
     const dimension =
       await this.dimensionService.findDimensionById(dimensionId);
 
     if (!dimension) {
-      throw new HttpException(
-        'Выбранное сечение не найдено',
-        HttpStatus.NOT_FOUND,
-      );
+      return 'Выбранное сечение не найдено. Запись об отгрузке не была создана';
     }
 
     const dimensionForSale = dimensionForSaleId
@@ -115,60 +117,20 @@ export class WoodShipmentService {
       : null;
 
     if (dimensionForSaleId && !dimensionForSale) {
-      throw new HttpException(
-        'Выбранное сечение для продажи не найдено',
-        HttpStatus.NOT_FOUND,
-      );
+      return 'Выбранное сечение для продажи не найдено. Запись об отгрузке не была создана';
     }
 
     const woodClass =
       await this.woodClassService.findWoodClassById(woodClassId);
 
     if (!woodClass) {
-      throw new HttpException('Выбранный сорт не найден', HttpStatus.NOT_FOUND);
+      return 'Выбранный сорт не найден. Запись об отгрузке не была создана';
     }
 
     const woodType = await this.woodTypeService.findWoodTypeById(woodTypeId);
 
     if (!woodType) {
-      throw new HttpException(
-        'Выбранная порода не найдена',
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
-    const woodCondition =
-      await this.woodConditionService.findWoodConditionById(woodConditionId);
-
-    if (!woodCondition) {
-      throw new HttpException(
-        'Выбранное состояние доски не найдено',
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
-    const buyer = buyerId
-      ? await this.buyerService.findBuyerById(buyerId)
-      : null;
-
-    if (buyerId && !buyer) {
-      throw new HttpException(
-        'Выбранный покупатель не найден',
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
-    const personInCharge = personInChargeId
-      ? await this.personInChargeService.findPersonInChargeById(
-          personInChargeId,
-        )
-      : null;
-
-    if (personInChargeId && !personInCharge) {
-      throw new HttpException(
-        'Выбранный ответственный не найден',
-        HttpStatus.NOT_FOUND,
-      );
+      return 'Выбранная порода не найдена. Запись об отгрузке не была создана';
     }
 
     const woodShipment = await this.woodShipmentRepository.create({
@@ -205,27 +167,82 @@ export class WoodShipmentService {
     }
 
     // Убрать доску со склада
-    if (!avoidDirectWarehouseChange) {
-      await this.updateWarehouseRecord({
-        amount,
-        woodClassId,
-        woodTypeId,
-        woodConditionId,
-        dimensionId,
-        action: 'subtract',
-      });
+    await this.updateWarehouseRecord({
+      amount,
+      woodClassId,
+      woodTypeId,
+      woodConditionId,
+      dimensionId,
+      action: 'subtract',
+    });
+  }
+
+  async createWoodShipments(woodShipmentDtos: CreateWoodShipmentDto[]) {
+    if (woodShipmentDtos.length === 0) {
+      return [];
     }
 
-    return woodShipment;
+    const { woodConditionId, buyerId, personInChargeId } = woodShipmentDtos[0];
+
+    const woodCondition =
+      await this.woodConditionService.findWoodConditionById(woodConditionId);
+
+    if (!woodCondition) {
+      throw new HttpException(
+        'Выбранное состояние доски не найдено',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const buyer = buyerId
+      ? await this.buyerService.findBuyerById(buyerId)
+      : null;
+
+    if (buyerId && !buyer) {
+      throw new HttpException(
+        'Выбранный покупатель не найден',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const personInCharge = personInChargeId
+      ? await this.personInChargeService.findPersonInChargeById(
+          personInChargeId,
+        )
+      : null;
+
+    if (personInChargeId && !personInCharge) {
+      throw new HttpException(
+        'Выбранный ответственный не найден',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const errors = (
+      await Promise.all(
+        woodShipmentDtos.map(async (woodShipmentDto) => {
+          return await this.createWoodShipment({
+            woodShipmentDto,
+            buyer,
+            personInCharge,
+            woodCondition,
+          });
+        }),
+      )
+    ).filter((error) => error !== undefined && error !== null);
+
+    if (errors.length !== 0) {
+      return errors;
+    }
+
+    return [];
   }
 
   async editWoodShipment(
     woodShipmentId: number,
     woodShipmentDto: UpdateWoodShipmentDto,
-    params?: { avoidDirectWarehouseChange: boolean },
   ) {
     const { amount, woodClassId, dimensionId } = woodShipmentDto;
-    const { avoidDirectWarehouseChange = false } = params ?? {};
 
     const woodShipment =
       await this.woodShipmentRepository.findByPk(woodShipmentId);
@@ -284,16 +301,14 @@ export class WoodShipmentService {
     }
 
     // Изменить запись на складе
-    if (!avoidDirectWarehouseChange) {
-      await this.updateWarehouseRecord({
-        amount: newAmount,
-        woodConditionId: woodShipment.woodConditionId,
-        woodClassId: woodShipment.woodClassId,
-        woodTypeId: woodShipment.woodTypeId,
-        dimensionId: woodShipment.dimensionId,
-        action: action,
-      });
-    }
+    await this.updateWarehouseRecord({
+      amount: newAmount,
+      woodConditionId: woodShipment.woodConditionId,
+      woodClassId: woodShipment.woodClassId,
+      woodTypeId: woodShipment.woodTypeId,
+      dimensionId: woodShipment.dimensionId,
+      action: action,
+    });
 
     return woodShipment;
   }
