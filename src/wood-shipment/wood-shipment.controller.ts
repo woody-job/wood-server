@@ -25,8 +25,8 @@ export class WoodShipmentController {
   @Roles('SUPERADMIN', 'ADMIN')
   @UseGuards(RolesGuard)
   @Post()
-  create(@Body() woodShipmentDto: CreateWoodShipmentDto) {
-    return this.woodShipmentService.createWoodShipment(woodShipmentDto);
+  create(@Body() woodShipmentDtos: CreateWoodShipmentDto[]) {
+    return this.woodShipmentService.createWoodShipments(woodShipmentDtos);
   }
 
   @ApiOperation({ summary: 'Редактирование отгрузки доски' })

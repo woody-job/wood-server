@@ -1,7 +1,10 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
+import { BeamArrivalService } from 'src/beam-arrival/beam-arrival.service';
 import { BeamInService } from 'src/beam-in/beam-in.service';
+import { BeamShipmentService } from 'src/beam-shipment/beam-shipment.service';
 import { BeamSizeService } from 'src/beam-size/beam-size.service';
+import { BeamWarehouseService } from 'src/beam-warehouse/beam-warehouse.service';
 import { DryerChamberDataService } from 'src/dryer-chamber-data/dryer-chamber-data.service';
 import { DryerChamberService } from 'src/dryer-chamber/dryer-chamber.service';
 import { RolesService } from 'src/roles/roles.service';
@@ -33,6 +36,10 @@ export class DataManagementService {
     private dryerChamberService: DryerChamberService,
     private dryerChamberDataService: DryerChamberDataService,
     private workshopDailyDataService: WorkshopDailyDataService,
+
+    private beamArrivalService: BeamArrivalService,
+    private beamShipmentService: BeamShipmentService,
+    private beamWarehouseService: BeamWarehouseService,
   ) {}
 
   async createBaseEntities() {
@@ -722,14 +729,23 @@ export class DataManagementService {
     // Удаление всех ежедневных данных о работе цехов
     await this.workshopDailyDataService.deleteAllWorkshopDailyData();
 
-    // Удаление всех поступлений
+    // Удаление всех поступлений доски
     await this.woodArrivalService.deleteAllWoodArrival();
 
-    // Удаление всех отгрузок
+    // Удаление всех поступлений сырья
+    await this.beamArrivalService.deleteAllBeamArrival();
+
+    // Удаление всех отгрузок доски
     await this.woodShipmentService.deleteAllWoodShipment();
 
-    // Удаление всех записей на складе
+    // Удаление всех отгрузок сырья
+    await this.beamShipmentService.deleteAllBeamShipment();
+
+    // Удаление всех записей на складе доски
     await this.warehouseService.deleteAllWarehouseRecords();
+
+    // Удаление всех записей на складе сырья
+    await this.beamWarehouseService.deleteAllWarehouseRecords();
 
     // Удаление всех записей о работе сушилок
     await this.dryerChamberDataService.deleteAllDryerChamberData();

@@ -25,8 +25,8 @@ export class WoodArrivalController {
   @Roles('SUPERADMIN', 'ADMIN')
   @UseGuards(RolesGuard)
   @Post()
-  create(@Body() woodArrivalDto: CreateWoodArrivalDto) {
-    return this.woodArrivalService.createWoodArrival(woodArrivalDto);
+  create(@Body() woodArrivalDtos: CreateWoodArrivalDto[]) {
+    return this.woodArrivalService.createWoodArrivals(woodArrivalDtos);
   }
 
   @ApiOperation({ summary: 'Редактирование поступления доски' })
