@@ -597,12 +597,7 @@ export class WorkshopOutService {
     let output = [];
 
     await Promise.all(
-      days.map(async (dayDate, index) => {
-        console.log(`\n THIS IS DATE DATA, index \n`, {
-          dayDate,
-          days,
-        });
-
+      days.map(async (dayDate) => {
         const { data: workshopOutData, totalWorkshopOutVolume } =
           await this.getAllWoodOutForWorkshopForADay({
             workshopId,
