@@ -76,8 +76,8 @@ export class WoodNamingService {
     const existingWoodNaming = await this.woodNamingRepository.findOne({
       where: {
         name,
-        minDiameter,
-        maxDiameter,
+        ...(minDiameter ? { minDiameter } : {}),
+        ...(maxDiameter ? { maxDiameter } : {}),
         length,
         woodTypeId,
       },
