@@ -21,7 +21,7 @@ import { WarehouseService } from 'src/warehouse/warehouse.service';
 import { WoodShipmentService } from 'src/wood-shipment/wood-shipment.service';
 
 import { Op, Sequelize } from 'sequelize';
-import * as moment from 'moment';
+import * as moment from 'moment-timezone';
 import { DryerChamber } from 'src/dryer-chamber/dryer-chamber.model';
 
 @Injectable()

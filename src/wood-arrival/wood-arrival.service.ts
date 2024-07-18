@@ -9,7 +9,7 @@ import { CreateWoodArrivalDto } from './dtos/create-wood-arrival.dto';
 import { UpdateWoodArrivalDto } from './dtos/update-wood-arrival.dto';
 
 import { Op, Sequelize } from 'sequelize';
-import * as moment from 'moment';
+import * as moment from 'moment-timezone';
 import { WoodClass } from 'src/wood-class/wood-class.model';
 import { WoodType } from 'src/wood-type/wood-type.model';
 import { Dimension } from 'src/dimension/dimension.model';

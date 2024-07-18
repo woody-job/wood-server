@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 
 import { Op, Sequelize } from 'sequelize';
-import * as moment from 'moment';
+import * as moment from 'moment-timezone';
 import { InjectModel } from '@nestjs/sequelize';
 import { Dimension } from 'src/dimension/dimension.model';
 import { DimensionService } from 'src/dimension/dimension.service';

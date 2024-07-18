@@ -11,7 +11,7 @@ import { Buyer } from 'src/buyer/buyer.model';
 import { WoodType } from 'src/wood-type/wood-type.model';
 
 import { Op, Sequelize } from 'sequelize';
-import * as moment from 'moment';
+import * as moment from 'moment-timezone';
 import { WoodNaming } from 'src/wood-naming/wood-naming.model';
 import { BeamSize } from 'src/beam-size/beam-size.model';
 import { BeamWarehouseService } from 'src/beam-warehouse/beam-warehouse.service';

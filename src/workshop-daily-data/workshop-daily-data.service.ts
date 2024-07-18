@@ -12,7 +12,7 @@ import { WoodNamingService } from 'src/wood-naming/wood-naming.service';
 import { UpdateDailyDimensionDto } from './dtos/update-daily-dimension.dto';
 import { Op, Sequelize } from 'sequelize';
 
-import * as moment from 'moment';
+import * as moment from 'moment-timezone';
 import { DimensionService } from 'src/dimension/dimension.service';
 import { WorkshopOutService } from 'src/workshop-out/workshop-out.service';
 import { Dimension } from 'src/dimension/dimension.model';

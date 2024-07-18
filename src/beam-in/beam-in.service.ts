@@ -11,7 +11,7 @@ import { WorkshopService } from 'src/workshop/workshop.service';
 import { AddBeamInDto } from './dtos/add-beam-in.dto';
 import { Op, Sequelize } from 'sequelize';
 
-import * as moment from 'moment';
+import * as moment from 'moment-timezone';
 import { BeamSizeService } from 'src/beam-size/beam-size.service';
 import { BeamSize } from 'src/beam-size/beam-size.model';
 import { UpdateBeamInDto } from './dtos/update-beam-in.dto';
