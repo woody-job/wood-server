@@ -13,9 +13,8 @@ import { AuthModule } from 'src/auth/auth.module';
 @Module({
   providers: [BeamWarehouseService],
   imports: [
-    SequelizeModule.forFeature([BeamWarehouse, WoodNaming, BeamSize]),
+    SequelizeModule.forFeature([BeamWarehouse, WoodNaming]),
     WoodNamingModule,
-    BeamSizeModule,
     WoodTypeModule,
     AuthModule,
   ],

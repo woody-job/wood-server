@@ -35,40 +35,36 @@ export class BeamInService {
 
   async updateWarehouse({
     woodNamingId,
-    beamSizeId,
-    amount = 0,
+    volume,
     action = 'add',
     errorMessage,
   }: {
     woodNamingId: number;
-    beamSizeId: number;
-    amount: number;
+    volume: number;
     action?: 'add' | 'subtract';
     errorMessage: string;
   }) {
     const existentWarehouseRecord =
       await this.beamWarehouseService.findWarehouseRecordByBeamParams({
         woodNamingId,
-        ...(beamSizeId ? { beamSizeId } : {}),
       });
 
     if (!existentWarehouseRecord) {
       throw new HttpException(errorMessage, HttpStatus.BAD_REQUEST);
     }
 
-    let newAmount = existentWarehouseRecord.amount;
+    let newVolume = Number(existentWarehouseRecord.volume);
 
     if (action === 'add') {
-      newAmount = existentWarehouseRecord.amount + amount;
+      newVolume = Number(existentWarehouseRecord.volume) + volume;
     }
 
     if (action === 'subtract') {
-      newAmount = existentWarehouseRecord.amount - amount;
+      newVolume = Number(existentWarehouseRecord.volume) - volume;
     }
 
     await this.beamWarehouseService.updateWarehouseRecord({
-      beamSizeId,
-      amount: newAmount,
+      volume: newVolume,
       woodNamingId,
     });
   }
@@ -138,12 +134,13 @@ export class BeamInService {
       );
     }
 
+    const beamInVolume = Number((amount * beamSize.volume).toFixed(4));
+
     // Убрать бревна со склада сырья
     await this.updateWarehouse({
       woodNamingId: woodNaming.id,
       action: 'subtract',
-      beamSizeId,
-      amount,
+      volume: beamInVolume,
       errorMessage:
         'На складе нет леса с предоставленными параметрами. Запись не была создана',
     });
@@ -168,7 +165,9 @@ export class BeamInService {
   async editBeamGoneToWorkshop(beamInId: number, beamInDto: UpdateBeamInDto) {
     const { amount } = beamInDto;
 
-    const beamIn = await this.beamInRepository.findByPk(beamInId);
+    const beamIn = await this.beamInRepository.findByPk(beamInId, {
+      include: [BeamSize],
+    });
 
     if (!beamIn) {
       throw new HttpException(
@@ -193,11 +192,14 @@ export class BeamInService {
       action = 'subtract';
     }
 
+    const newBeamInVolume = Number(
+      (newAmount * beamIn.beamSize.volume).toFixed(4),
+    );
+
     await this.updateWarehouse({
       woodNamingId: beamIn.woodNamingId,
       action,
-      beamSizeId: beamIn.beamSizeId,
-      amount: newAmount,
+      volume: newBeamInVolume,
       errorMessage:
         'На складе нет леса с предоставленными параметрами. Запись не была изменена',
     });
@@ -274,7 +276,9 @@ export class BeamInService {
   }
 
   async deleteBeamInFromWorkshop(beamInId: number) {
-    const beamIn = await this.beamInRepository.findByPk(beamInId);
+    const beamIn = await this.beamInRepository.findByPk(beamInId, {
+      include: [BeamSize],
+    });
 
     if (!beamIn) {
       throw new HttpException(
@@ -283,12 +287,15 @@ export class BeamInService {
       );
     }
 
+    const beamInVolume = Number(
+      (beamIn.amount * beamIn.beamSize.volume).toFixed(4),
+    );
+
     // Изменить запись на складе
     await this.updateWarehouse({
       woodNamingId: beamIn.woodNamingId,
-      beamSizeId: beamIn.beamSizeId,
+      volume: beamInVolume,
       action: 'add',
-      amount: beamIn.amount,
       errorMessage:
         'На складе нет леса с предоставленными параметрами. Запись не была удалена',
     });
