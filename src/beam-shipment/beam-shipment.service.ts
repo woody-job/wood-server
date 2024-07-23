@@ -15,7 +15,7 @@ import * as moment from 'moment-timezone';
 import { WoodNaming } from 'src/wood-naming/wood-naming.model';
 import { BeamSize } from 'src/beam-size/beam-size.model';
 import { BeamWarehouseService } from 'src/beam-warehouse/beam-warehouse.service';
-import { WarehouseErrorsType } from 'src/types';
+import { BeamWarehouseErrorsType } from 'src/types';
 
 @Injectable()
 export class BeamShipmentService {
@@ -30,23 +30,25 @@ export class BeamShipmentService {
   ) {}
 
   async updateWarehouse({
-    woodNamingId,
+    woodNaming,
     volume,
     action = 'add',
     errorMessages,
   }: {
-    woodNamingId: number;
+    woodNaming: WoodNaming;
     volume: number;
     action?: 'add' | 'subtract';
-    errorMessages: WarehouseErrorsType;
+    errorMessages: BeamWarehouseErrorsType;
   }) {
     const existentWarehouseRecord =
       await this.beamWarehouseService.findWarehouseRecordByBeamParams({
-        woodNamingId,
+        woodNamingId: woodNaming.id,
       });
 
     if (!existentWarehouseRecord) {
-      return errorMessages.noSuchRecord();
+      return errorMessages.noSuchRecord({
+        woodNaming: woodNaming.name.toLowerCase(),
+      });
     }
 
     let newVolume = Number(existentWarehouseRecord.volume);
@@ -59,16 +61,17 @@ export class BeamShipmentService {
       newVolume = Number(existentWarehouseRecord.volume) - volume;
 
       if (existentWarehouseRecord.volume < newVolume) {
-        return errorMessages.notEnoughVolume(
-          existentWarehouseRecord.volume,
-          volume,
-        );
+        return errorMessages.notEnoughVolume({
+          warehouseVolume: existentWarehouseRecord.volume,
+          newRecordVolume: volume,
+          woodNaming: woodNaming.name.toLocaleLowerCase(),
+        });
       }
     }
 
     await this.beamWarehouseService.updateWarehouseRecord({
       volume: newVolume,
-      woodNamingId,
+      woodNamingId: woodNaming.id,
     });
   }
 
@@ -123,14 +126,14 @@ export class BeamShipmentService {
 
     // Убрать бревна со склада сырья
     const warehouseError = await this.updateWarehouse({
-      woodNamingId: correspondingWoodNaming.id,
+      woodNaming: correspondingWoodNaming,
       action: 'subtract',
       volume: totalRecordVolume,
       errorMessages: {
-        noSuchRecord: () =>
-          'На складе нет леса с предоставленными параметрами. Запись об отгрузке не была создана',
-        notEnoughVolume: (warehouseVolume, newRecordVolume) =>
-          `На складе есть только ${warehouseVolume} м3 выбранного леса. 
+        noSuchRecord: ({ woodNaming }) =>
+          `На складе нет леса "${woodNaming}". Запись об отгрузке не была создана`,
+        notEnoughVolume: ({ warehouseVolume, newRecordVolume, woodNaming }) =>
+          `На складе есть только ${warehouseVolume} м3 выбранного леса "${woodNaming}". 
             Создать запись об отгрузке ${newRecordVolume} м3 леса невозможно.`,
       },
     });
@@ -218,7 +221,7 @@ export class BeamShipmentService {
   ) {
     const beamShipment = await this.beamShipmentRepository.findByPk(
       beamShipmentId,
-      { include: [BeamSize] },
+      { include: [BeamSize, WoodNaming] },
     );
 
     if (!beamShipment) {
@@ -265,14 +268,14 @@ export class BeamShipmentService {
     }
 
     const warehouseError = await this.updateWarehouse({
-      woodNamingId: beamShipment.woodNamingId,
+      woodNaming: beamShipment.woodNaming,
       action,
       volume: newVolume,
       errorMessages: {
-        noSuchRecord: () =>
-          'На складе нет леса с предоставленными параметрами. Запись об отгрузке не была изменена',
-        notEnoughVolume: (warehouseVolume, newRecordVolume) =>
-          `На складе есть только ${warehouseVolume} м3 выбранного леса. 
+        noSuchRecord: ({ woodNaming }) =>
+          `На складе нет леса "${woodNaming}". Запись об отгрузке не была изменена`,
+        notEnoughVolume: ({ warehouseVolume, newRecordVolume, woodNaming }) =>
+          `На складе есть только ${warehouseVolume} м3 выбранного леса "${woodNaming}". 
             Изменить запись об отгрузке на ${newRecordVolume} м3 невозможно.`,
       },
     });
@@ -373,7 +376,7 @@ export class BeamShipmentService {
   async deleteBeamShipment(beamShipmentId: number) {
     const beamShipment = await this.beamShipmentRepository.findByPk(
       beamShipmentId,
-      { include: [BeamSize] },
+      { include: [BeamSize, WoodNaming] },
     );
 
     if (!beamShipment) {
@@ -385,14 +388,14 @@ export class BeamShipmentService {
 
     // Изменить запись на складе
     const warehouseError = await this.updateWarehouse({
-      woodNamingId: beamShipment.woodNamingId,
+      woodNaming: beamShipment.woodNaming,
       action: 'add',
       volume: beamShipment.volume,
       errorMessages: {
-        noSuchRecord: () =>
-          'На складе нет леса с предоставленными параметрами. Запись об отгрузке не была удалена',
-        notEnoughVolume: (warehouseVolume, newRecordVolume) =>
-          `На складе есть только ${warehouseVolume} м3 выбранного леса. 
+        noSuchRecord: ({ woodNaming }) =>
+          `На складе нет леса "${woodNaming}". Запись об отгрузке не была удалена`,
+        notEnoughVolume: ({ warehouseVolume, newRecordVolume, woodNaming }) =>
+          `На складе есть только ${warehouseVolume} м3 выбранного леса "${woodNaming}". 
             Удалить запись об отгрузке ${newRecordVolume} м3 леса невозможно.`,
       },
     });
