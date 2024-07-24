@@ -152,28 +152,34 @@ export class WoodNamingService {
     length: number;
     woodTypeId: number;
   }) {
-    const diameterParams =
-      // 14см - максимальный диаметр баланса
-      diameter === 14
-        ? {
-            maxDiameter: {
-              [Op.lte]: diameter,
-            },
-          }
-        : {
-            minDiameter: {
-              [Op.lte]: diameter,
-            },
-            maxDiameter: {
-              [Op.gte]: diameter,
-            },
-          };
+    let whereClause = {
+      minDiameter: {
+        [Op.lte]: diameter,
+      },
+      maxDiameter: {
+        [Op.gte]: diameter,
+      },
+    } as any;
+
+    // 14см - максимальный диаметр баланса
+    if (diameter <= 14) {
+      whereClause = {
+        maxDiameter: 14,
+      };
+    }
+
+    // 32см - минимальный диаметр крупного леса
+    if (diameter >= 32) {
+      whereClause = {
+        minDiameter: 32,
+      };
+    }
 
     const woodNaming = await this.woodNamingRepository.findOne({
       where: {
         length,
         woodTypeId,
-        ...diameterParams,
+        ...whereClause,
       },
     });
 
