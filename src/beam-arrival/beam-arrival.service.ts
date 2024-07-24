@@ -15,6 +15,7 @@ import * as moment from 'moment-timezone';
 import { WoodNaming } from 'src/wood-naming/wood-naming.model';
 import { BeamSize } from 'src/beam-size/beam-size.model';
 import { BeamWarehouseService } from 'src/beam-warehouse/beam-warehouse.service';
+import { BeamWarehouseErrorsType } from 'src/types';
 
 @Injectable()
 export class BeamArrivalService {
@@ -29,26 +30,22 @@ export class BeamArrivalService {
   ) {}
 
   async updateWarehouse({
-    woodNamingId,
-    beamSizeId,
-    amount = 0,
-    volume = 0,
+    woodNaming,
+    volume,
     action = 'add',
     isCreate = false,
+    errorMessages,
   }: {
-    woodNamingId: number;
-    beamSizeId?: number;
-    amount?: number;
-    volume?: number;
+    woodNaming: WoodNaming;
+    volume: number;
     action?: 'add' | 'subtract';
     isCreate?: boolean;
+    errorMessages?: BeamWarehouseErrorsType | undefined;
   }) {
     if (isCreate) {
       await this.beamWarehouseService.createWarehouseRecord({
-        ...(amount ? { amount } : {}),
-        ...(volume ? { volume } : {}),
-        ...(beamSizeId ? { beamSizeId } : {}),
-        woodNamingId,
+        volume,
+        woodNamingId: woodNaming.id,
       });
 
       return;
@@ -56,36 +53,40 @@ export class BeamArrivalService {
 
     const existentWarehouseRecord =
       await this.beamWarehouseService.findWarehouseRecordByBeamParams({
-        woodNamingId,
-        ...(beamSizeId ? { beamSizeId } : {}),
+        woodNamingId: woodNaming.id,
       });
 
     if (!existentWarehouseRecord) {
-      return;
+      return errorMessages?.noSuchRecord({
+        woodNaming: woodNaming.name.toLowerCase(),
+      });
     }
 
-    let newAmount = existentWarehouseRecord.amount;
     let newVolume = Number(existentWarehouseRecord.volume);
 
     if (isCreate) {
-      newAmount = existentWarehouseRecord.amount + amount;
       newVolume = Number(existentWarehouseRecord.volume) + volume;
     } else {
       if (action === 'add') {
-        newAmount = existentWarehouseRecord.amount + amount;
         newVolume = Number(existentWarehouseRecord.volume) + volume;
       }
 
       if (action === 'subtract') {
-        newAmount = existentWarehouseRecord.amount - amount;
         newVolume = Number(existentWarehouseRecord.volume) - volume;
+
+        if (newVolume < 0) {
+          return errorMessages?.notEnoughVolume({
+            warehouseVolume: existentWarehouseRecord.volume,
+            newRecordVolume: Number(volume).toFixed(4),
+            woodNaming: woodNaming.name.toLocaleLowerCase(),
+          });
+        }
       }
     }
 
     await this.beamWarehouseService.updateWarehouseRecord({
-      ...(beamSizeId ? { beamSizeId } : {}),
-      ...(beamSizeId ? { amount: newAmount } : { volume: newVolume }),
-      woodNamingId,
+      volume: newVolume,
+      woodNamingId: woodNaming.id,
     });
   }
 
@@ -147,6 +148,13 @@ export class BeamArrivalService {
       ? volume
       : foundBeamSize.volume * amount;
 
+    // Пополнить запись на складе сырья
+    await this.updateWarehouse({
+      woodNaming: correspondingWoodNaming,
+      isCreate: true,
+      volume: totalRecordVolume,
+    });
+
     const beamArrival = await this.beamArrivalRepository.create({
       date,
       ...(amount ? { amount } : {}),
@@ -169,14 +177,6 @@ export class BeamArrivalService {
 
     await beamArrival.$set('woodNaming', correspondingWoodNaming.id);
     beamArrival.woodNaming = correspondingWoodNaming;
-
-    // Пополнить запись на складе сырья
-    await this.updateWarehouse({
-      woodNamingId: correspondingWoodNaming.id,
-      isCreate: true,
-      ...(beamSizeId ? { beamSizeId } : {}),
-      ...(beamSizeId ? { amount } : { volume }),
-    });
   }
 
   async createBeamArrivals(beamArrivalDtos: CreateBeamArrivalDto[]) {
@@ -234,7 +234,7 @@ export class BeamArrivalService {
   ) {
     const beamArrival = await this.beamArrivalRepository.findByPk(
       beamArrivalId,
-      { include: [BeamSize] },
+      { include: [BeamSize, WoodNaming] },
     );
 
     if (!beamArrival) {
@@ -246,7 +246,6 @@ export class BeamArrivalService {
 
     const { amount, volume } = beamArrivalDto;
 
-    const oldBeamArrivalAmount = beamArrival.amount;
     const oldBeamArrivalVolume = beamArrival.volume;
 
     if (!amount && !volume) {
@@ -267,26 +266,13 @@ export class BeamArrivalService {
       beamArrival.volume = volume;
     }
 
-    await beamArrival.save();
-
     // Обновить запись на складе сырья
-    let newAmount = oldBeamArrivalAmount;
     let newVolume = oldBeamArrivalVolume;
     let action: 'add' | 'subtract' = 'subtract';
-
-    if (oldBeamArrivalAmount > beamArrival.amount) {
-      newAmount = oldBeamArrivalAmount - beamArrival.amount;
-      action = 'subtract';
-    }
 
     if (oldBeamArrivalVolume > beamArrival.volume) {
       newVolume = oldBeamArrivalVolume - beamArrival.volume;
       action = 'subtract';
-    }
-
-    if (oldBeamArrivalAmount < beamArrival.amount) {
-      newAmount = beamArrival.amount - oldBeamArrivalAmount;
-      action = 'add';
     }
 
     if (oldBeamArrivalVolume < beamArrival.volume) {
@@ -294,12 +280,24 @@ export class BeamArrivalService {
       action = 'add';
     }
 
-    await this.updateWarehouse({
-      woodNamingId: beamArrival.woodNamingId,
+    const warehouseError = await this.updateWarehouse({
+      woodNaming: beamArrival.woodNaming,
       action,
-      ...(beamArrival.beamSize ? { beamSizeId: beamArrival.beamSize.id } : {}),
-      ...(beamArrival.beamSize ? { amount: newAmount } : { volume: newVolume }),
+      volume: newVolume,
+      errorMessages: {
+        noSuchRecord: ({ woodNaming }) =>
+          `На складе нет леса "${woodNaming}". Запись о поступлении не была изменена`,
+        notEnoughVolume: ({ warehouseVolume, newRecordVolume, woodNaming }) =>
+          `На складе есть только ${warehouseVolume} м3 выбранного леса "${woodNaming}". 
+            Изменить запись о поступлении на ${newRecordVolume} м3 невозможно.`,
+      },
     });
+
+    if (warehouseError) {
+      throw new HttpException(warehouseError, HttpStatus.BAD_REQUEST);
+    }
+
+    await beamArrival.save();
 
     return beamArrival;
   }
@@ -391,7 +389,7 @@ export class BeamArrivalService {
   async deleteBeamArrival(beamArrivalId: number) {
     const beamArrival = await this.beamArrivalRepository.findByPk(
       beamArrivalId,
-      { include: [BeamSize] },
+      { include: [BeamSize, WoodNaming] },
     );
 
     if (!beamArrival) {
@@ -401,17 +399,25 @@ export class BeamArrivalService {
       );
     }
 
-    await beamArrival.destroy();
-
     // Изменить запись на складе
-    await this.updateWarehouse({
-      woodNamingId: beamArrival.woodNamingId,
-      beamSizeId: beamArrival.beamSizeId,
+    const warehouseError = await this.updateWarehouse({
+      woodNaming: beamArrival.woodNaming,
       action: 'subtract',
-      ...(beamArrival.beamSize
-        ? { amount: beamArrival.amount }
-        : { volume: beamArrival.volume }),
+      volume: beamArrival.volume,
+      errorMessages: {
+        noSuchRecord: ({ woodNaming }) =>
+          `На складе нет леса "${woodNaming}". Запись о поступлении не была удалена`,
+        notEnoughVolume: ({ warehouseVolume, newRecordVolume, woodNaming }) =>
+          `На складе есть только ${warehouseVolume} м3 выбранного леса "${woodNaming}". 
+            Удалить запись о поступлении ${newRecordVolume} м3 леса невозможно.`,
+      },
     });
+
+    if (warehouseError) {
+      throw new HttpException(warehouseError, HttpStatus.BAD_REQUEST);
+    }
+
+    await beamArrival.destroy();
   }
 
   async deleteAllBeamArrival() {

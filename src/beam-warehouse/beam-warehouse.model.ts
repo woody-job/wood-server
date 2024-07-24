@@ -7,13 +7,10 @@ import {
   Model,
   Table,
 } from 'sequelize-typescript';
-import { BeamSize } from 'src/beam-size/beam-size.model';
 import { WoodNaming } from 'src/wood-naming/wood-naming.model';
 
 interface BeamWarehouseCreationAttrs {
   woodNamingId: number; // (has woodType, length)
-  amount?: number;
-  beamSizeId?: number;
   volume?: number;
 }
 
@@ -41,27 +38,6 @@ export class BeamWarehouse extends Model<
 
   @BelongsTo(() => WoodNaming)
   woodNaming: WoodNaming;
-
-  @ApiProperty({
-    example: '1',
-    description: 'id размера леса',
-  })
-  @ForeignKey(() => BeamSize)
-  @Column({ field: 'beam_size_id', allowNull: true })
-  beamSizeId: number;
-
-  @BelongsTo(() => BeamSize)
-  beamSize: BeamSize;
-
-  @ApiProperty({
-    example: '12',
-    description: 'Количество',
-  })
-  @Column({
-    type: DataTypes.INTEGER,
-    allowNull: true,
-  })
-  amount: number;
 
   @ApiProperty({
     example: '1',
