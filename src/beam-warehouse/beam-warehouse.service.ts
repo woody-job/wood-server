@@ -2,11 +2,9 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { BeamWarehouse } from './beam-warehouse.model';
 import { WoodNamingService } from 'src/wood-naming/wood-naming.service';
-import { BeamSizeService } from 'src/beam-size/beam-size.service';
 import { CreateBeamWarehouseRecordDto } from './dtos/create-beam-warehouse-record.dto';
 import { WoodNaming } from 'src/wood-naming/wood-naming.model';
 import { WoodTypeService } from 'src/wood-type/wood-type.service';
-import { BeamSize } from 'src/beam-size/beam-size.model';
 
 @Injectable()
 export class BeamWarehouseService {
@@ -14,14 +12,13 @@ export class BeamWarehouseService {
     @InjectModel(BeamWarehouse)
     private beamWarehouseRepository: typeof BeamWarehouse,
     private woodNamingService: WoodNamingService,
-    private beamSizeService: BeamSizeService,
     private woodTypeService: WoodTypeService,
   ) {}
 
   async createWarehouseRecord(
     warehouseRecordDto: CreateBeamWarehouseRecordDto,
   ) {
-    const { woodNamingId, beamSizeId, amount, volume } = warehouseRecordDto;
+    const { woodNamingId, volume } = warehouseRecordDto;
 
     const woodNaming =
       await this.woodNamingService.findWoodNamingById(woodNamingId);
@@ -33,35 +30,20 @@ export class BeamWarehouseService {
       );
     }
 
-    const beamSize = await this.beamSizeService.findBeamSizeById(beamSizeId);
-
-    if (beamSizeId && !beamSize) {
-      throw new HttpException(
-        'Выбранный размер леса (диаметр) не найден',
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     // Если запись склада с предоставленными параметрами бревна уже существует,
-    // то просто увеличивается ее количество или объем (пиловочник/баланс)
+    // то просто увеличивается ее объем
     const existingWarehouseRecord = await this.beamWarehouseRepository.findOne({
       where: {
         woodNamingId,
-        ...(beamSizeId ? { beamSizeId } : {}),
       },
     });
 
     if (existingWarehouseRecord) {
       // Если запись склада с предоставленными параметрами доски уже существует,
-      // то просто увеличивается ее количество или объем (пиловочник/баланс)
-      if (beamSize) {
-        existingWarehouseRecord.amount =
-          existingWarehouseRecord.amount + amount;
-      } else {
-        existingWarehouseRecord.volume = Number(
-          (Number(existingWarehouseRecord.volume) + volume).toFixed(4),
-        );
-      }
+      // то просто увеличивается ее объем
+      existingWarehouseRecord.volume = Number(
+        (Number(existingWarehouseRecord.volume) + volume).toFixed(4),
+      );
 
       await existingWarehouseRecord.save();
 
@@ -69,17 +51,11 @@ export class BeamWarehouseService {
     }
 
     const warehouseRecord = await this.beamWarehouseRepository.create({
-      ...(amount ? { amount } : {}),
-      ...(volume ? { volume } : {}),
+      volume,
     });
 
     await warehouseRecord.$set('woodNaming', woodNamingId);
     warehouseRecord.woodNaming = woodNaming;
-
-    if (beamSize) {
-      await warehouseRecord.$set('beamSize', beamSizeId);
-      warehouseRecord.beamSize = beamSize;
-    }
 
     return warehouseRecord;
   }
@@ -87,7 +63,7 @@ export class BeamWarehouseService {
   async updateWarehouseRecord(
     warehouseRecordDto: CreateBeamWarehouseRecordDto,
   ) {
-    const { woodNamingId, beamSizeId, amount, volume } = warehouseRecordDto;
+    const { woodNamingId, volume } = warehouseRecordDto;
 
     const woodNaming =
       await this.woodNamingService.findWoodNamingById(woodNamingId);
@@ -99,19 +75,9 @@ export class BeamWarehouseService {
       );
     }
 
-    const beamSize = await this.beamSizeService.findBeamSizeById(beamSizeId);
-
-    if (beamSizeId && !beamSize) {
-      throw new HttpException(
-        'Выбранный размер леса (диаметр) не найден',
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     const warehouseRecord = await this.beamWarehouseRepository.findOne({
       where: {
         woodNamingId,
-        ...(beamSizeId ? { beamSizeId } : {}),
       },
     });
 
@@ -123,17 +89,14 @@ export class BeamWarehouseService {
     }
 
     // Если новое количество <= 0, то запись на складе удаляется.
-    if (amount <= 0 || volume <= 0) {
+    // TODO: Здесь нужна проверка и оповещение пользователя
+    if (volume <= 0) {
       await this.deleteWarehouseRecord(warehouseRecord.id);
 
       return;
     }
 
-    if (beamSize) {
-      warehouseRecord.amount = amount;
-    } else {
-      warehouseRecord.volume = volume;
-    }
+    warehouseRecord.volume = volume;
 
     await warehouseRecord.save();
 
@@ -141,20 +104,17 @@ export class BeamWarehouseService {
   }
 
   async findWarehouseRecordByBeamParams({
-    beamSizeId,
     woodNamingId,
   }: {
-    beamSizeId?: number;
     woodNamingId: number;
   }) {
     const warehouseRecord = await this.beamWarehouseRepository.findOne({
       where: {
-        ...(beamSizeId ? { beamSizeId } : {}),
         woodNamingId,
       },
-      include: [WoodNaming, BeamSize],
+      include: [WoodNaming],
       attributes: {
-        exclude: ['woodNamingId', 'beamSizeId'],
+        exclude: ['woodNamingId'],
       },
     });
 
@@ -163,32 +123,24 @@ export class BeamWarehouseService {
 
   async getAllWarehouseRecords() {
     const warehouseRecords = await this.beamWarehouseRepository.findAll({
-      include: [WoodNaming, BeamSize],
+      include: [WoodNaming],
       attributes: {
-        exclude: ['woodNamingId', 'beamSizeId'],
+        exclude: ['woodNamingId'],
       },
       order: [['id', 'DESC']],
     });
 
     let totalVolume = 0;
 
-    const output = warehouseRecords.map(
-      ({ id, woodNaming, beamSize, amount, volume }) => {
-        const recordVolume = beamSize
-          ? Number((beamSize.volume * amount).toFixed(4))
-          : volume;
+    const output = warehouseRecords.map(({ id, woodNaming, volume }) => {
+      totalVolume += Number(volume);
 
-        totalVolume += Number(recordVolume);
-
-        return {
-          id,
-          woodNaming,
-          beamSize,
-          amount,
-          volume: recordVolume,
-        };
-      },
-    );
+      return {
+        id,
+        woodNaming,
+        volume,
+      };
+    });
 
     return {
       data: output,
@@ -207,18 +159,38 @@ export class BeamWarehouseService {
           await this.beamWarehouseRepository.findAll({
             include: [
               { model: WoodNaming, where: { woodTypeId: woodType.id } },
-              { model: BeamSize },
             ],
             attributes: {
-              exclude: ['woodNamingId', 'beamSizeId'],
+              exclude: ['woodNamingId'],
             },
           });
 
-        const totalVolume = warehouseRecordsByWoodType.reduce(
+        const balanceWarehouseRecordsByWoodType = [];
+        const sawingWarehouseRecordsByWoodType = [];
+
+        warehouseRecordsByWoodType.forEach((warehouseRecord) => {
+          // 14см - максимальный диаметр баланса
+          if (warehouseRecord.woodNaming.maxDiameter === 14) {
+            balanceWarehouseRecordsByWoodType.push(warehouseRecord);
+
+            return;
+          }
+
+          sawingWarehouseRecordsByWoodType.push(warehouseRecord);
+        });
+
+        const totalBalanceVolume = balanceWarehouseRecordsByWoodType.reduce(
           (total, warehouseRecord) => {
-            const volume = warehouseRecord.beamSize
-              ? warehouseRecord.beamSize.volume * warehouseRecord.amount
-              : Number(warehouseRecord.volume);
+            const volume = Number(warehouseRecord.volume);
+
+            return total + volume;
+          },
+          0,
+        );
+
+        const totalSawingVolume = sawingWarehouseRecordsByWoodType.reduce(
+          (total, warehouseRecord) => {
+            const volume = Number(warehouseRecord.volume);
 
             return total + volume;
           },
@@ -228,7 +200,8 @@ export class BeamWarehouseService {
         output.push({
           woodTypeId: woodType.id,
           woodTypeName: woodType.name,
-          totalVolume: Number(totalVolume.toFixed(4)),
+          balanceVolume: Number(totalBalanceVolume.toFixed(4)),
+          sawingVolume: Number(totalSawingVolume.toFixed(4)),
         });
       }),
     );

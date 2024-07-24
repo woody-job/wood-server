@@ -25,6 +25,7 @@ import { WoodConditionService } from 'src/wood-condition/wood-condition.service'
 import { WarehouseService } from 'src/warehouse/warehouse.service';
 import { BeamInService } from 'src/beam-in/beam-in.service';
 import { WorkshopDailyDataService } from 'src/workshop-daily-data/workshop-daily-data.service';
+import { WoodWarehouseErrorsType } from 'src/types';
 
 @Injectable()
 export class WorkshopOutService {
@@ -49,20 +50,20 @@ export class WorkshopOutService {
 
   private async updateWarehouseRecord({
     amount,
-    woodClassId,
-    woodTypeId,
-    dimensionId,
+    woodClass,
+    woodType,
+    dimension,
     action = 'add',
     isCreate = false,
-    isUpdate = false,
+    errorMessages,
   }: {
     amount: number;
-    woodClassId: number;
-    woodTypeId: number;
-    dimensionId: number;
+    woodClass: WoodClass;
+    woodType: WoodType;
+    dimension: Dimension;
     action?: 'add' | 'subtract';
     isCreate?: boolean;
-    isUpdate?: boolean;
+    errorMessages?: WoodWarehouseErrorsType | undefined;
   }) {
     // Внести на склад сырую доску
     const wetWoodCondition =
@@ -75,13 +76,13 @@ export class WorkshopOutService {
       );
     }
 
-    if (!isUpdate) {
+    if (isCreate) {
       await this.warehouseService.createWarehouseRecord({
         amount: amount,
         woodConditionId: wetWoodCondition.id,
-        woodClassId: woodClassId,
-        woodTypeId: woodTypeId,
-        dimensionId: dimensionId,
+        woodClassId: woodClass.id,
+        woodTypeId: woodType.id,
+        dimensionId: dimension.id,
       });
 
       return;
@@ -90,73 +91,53 @@ export class WorkshopOutService {
     const existentWarehouseRecord =
       await this.warehouseService.findWarehouseRecordByWoodParams({
         woodConditionId: wetWoodCondition.id,
-        woodClassId: woodClassId,
-        woodTypeId: woodTypeId,
-        dimensionId: dimensionId,
+        woodClassId: woodClass.id,
+        woodTypeId: woodType.id,
+        dimensionId: dimension.id,
       });
 
     if (!existentWarehouseRecord) {
-      await this.warehouseService.createWarehouseRecord({
-        amount: amount,
-        woodConditionId: wetWoodCondition.id,
-        woodClassId: woodClassId,
-        woodTypeId: woodTypeId,
-        dimensionId: dimensionId,
-      });
-    } else {
-      let newAmount = existentWarehouseRecord.amount;
-
-      if (isCreate) {
-        newAmount = amount;
-      } else {
-        if (action === 'add') {
-          newAmount = existentWarehouseRecord.amount + amount;
-        }
-
-        if (action === 'subtract') {
-          newAmount = existentWarehouseRecord.amount - amount;
-        }
-      }
-
-      await this.warehouseService.updateWarehouseRecord({
-        amount: newAmount,
-        woodConditionId: wetWoodCondition.id,
-        woodClassId: woodClassId,
-        woodTypeId: woodTypeId,
-        dimensionId: dimensionId,
-      });
-    }
-  }
-
-  private async updateWarehouseForCreate({
-    amount,
-    woodClassId,
-    woodTypeId,
-    dimensionId,
-  }: {
-    amount: number;
-    woodClassId: number;
-    woodTypeId: number;
-    dimensionId: number;
-  }) {
-    // Внести на склад сырую доску
-    const wetWoodCondition =
-      await this.woodConditionService.findWoodConditionByName('Сырая');
-
-    if (!wetWoodCondition) {
       throw new HttpException(
-        "Состояния доски 'Сырая' нет в базе",
-        HttpStatus.NOT_FOUND,
+        errorMessages?.noSuchRecord({
+          woodClass: woodClass.name.toLowerCase(),
+          woodType: woodType.name.toLowerCase(),
+          woodCondition: wetWoodCondition.name.toLowerCase(),
+          dimension: `${dimension.width}x${dimension.thickness}x${dimension.length}`,
+        }),
+        HttpStatus.BAD_REQUEST,
       );
     }
 
-    // Внести на склад сырую доску
-    await this.updateWarehouseRecord({
-      amount,
-      woodClassId,
-      woodTypeId,
-      dimensionId,
-      isCreate: true,
+    let newAmount = existentWarehouseRecord.amount;
+
+    if (action === 'add') {
+      newAmount = existentWarehouseRecord.amount + amount;
+    }
+
+    if (action === 'subtract') {
+      newAmount = existentWarehouseRecord.amount - amount;
+
+      if (newAmount < 0) {
+        throw new HttpException(
+          errorMessages?.notEnoughAmount({
+            warehouseAmount: existentWarehouseRecord.amount,
+            newRecordAmount: amount,
+            woodClass: woodClass.name.toLowerCase(),
+            woodType: woodType.name.toLowerCase(),
+            woodCondition: wetWoodCondition.name.toLowerCase(),
+            dimension: `${dimension.width}x${dimension.thickness}x${dimension.length}`,
+          }),
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    await this.warehouseService.updateWarehouseRecord({
+      amount: newAmount,
+      woodConditionId: wetWoodCondition.id,
+      woodClassId: woodClass.id,
+      woodTypeId: woodType.id,
+      dimensionId: dimension.id,
     });
   }
 
@@ -184,17 +165,19 @@ export class WorkshopOutService {
         woodTypeId,
         dimensionId,
       },
+      include: [WoodClass, WoodType, Dimension],
     });
 
     if (existentWorkshopOut) {
       existentWorkshopOut.amount = existentWorkshopOut.amount + amount;
       await existentWorkshopOut.save();
 
-      await this.updateWarehouseForCreate({
+      // Добавить доски на склад
+      await this.updateWarehouseRecord({
         amount: amount,
-        woodClassId: existentWorkshopOut.woodClassId,
-        woodTypeId: existentWorkshopOut.woodTypeId,
-        dimensionId: existentWorkshopOut.dimensionId,
+        woodClass: existentWorkshopOut.woodClass,
+        woodType: existentWorkshopOut.woodType,
+        dimension: existentWorkshopOut.dimension,
       });
 
       return existentWorkshopOut;
@@ -268,11 +251,13 @@ export class WorkshopOutService {
     await workshopOut.$set('dimension', dimensionId);
     workshopOut.dimension = dimension;
 
-    await this.updateWarehouseForCreate({
+    // Добавить доски на склад
+    await this.updateWarehouseRecord({
       amount: workshopOut.amount,
-      woodClassId: workshopOut.woodClassId,
-      woodTypeId: workshopOut.woodTypeId,
-      dimensionId: workshopOut.dimensionId,
+      woodClass,
+      woodType,
+      dimension,
+      isCreate: true,
     });
 
     return workshopOut;
@@ -284,8 +269,10 @@ export class WorkshopOutService {
   ) {
     const { amount, woodClassId, woodTypeId, dimensionId } = workshopOutDto;
 
-    const workshopOut =
-      await this.workshopOutRepository.findByPk(workshopOutId);
+    const workshopOut = await this.workshopOutRepository.findByPk(
+      workshopOutId,
+      { include: [WoodClass, WoodType, Dimension] },
+    );
 
     if (!workshopOut) {
       throw new HttpException(
@@ -332,6 +319,45 @@ export class WorkshopOutService {
       );
     }
 
+    workshopOut.amount = amount;
+
+    // Изменить запись на складе (сырая доска)
+    let newAmount = oldWorkshopOutAmount;
+    let action: 'add' | 'subtract' = 'subtract';
+
+    if (oldWorkshopOutAmount > workshopOut.amount) {
+      newAmount = oldWorkshopOutAmount - workshopOut.amount;
+      action = 'subtract';
+    }
+
+    if (oldWorkshopOutAmount < workshopOut.amount) {
+      newAmount = workshopOut.amount - oldWorkshopOutAmount;
+      action = 'add';
+    }
+
+    await this.updateWarehouseRecord({
+      amount: newAmount,
+      woodClass: workshopOut.woodClass,
+      woodType: workshopOut.woodType,
+      dimension: workshopOut.dimension,
+      action: action,
+      errorMessages: {
+        noSuchRecord: ({ woodType, woodClass, dimension, woodCondition }) =>
+          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
+           Запись о выходе из цеха не была изменена`,
+        notEnoughAmount: ({
+          woodCondition,
+          warehouseAmount,
+          newRecordAmount,
+          woodType,
+          woodClass,
+          dimension,
+        }) =>
+          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
+            Изменить запись о выходе из цеха на ${newRecordAmount} шт невозможно.`,
+      },
+    });
+
     // Цену доски пользователь не передает, она получается из базы данных по другим внесенным
     // в дто параметрам
     const workshopWoodPrice =
@@ -353,41 +379,7 @@ export class WorkshopOutService {
       workshopOut.woodType = woodType;
     }
 
-    workshopOut.amount = amount;
     await workshopOut.save();
-
-    // Изменить запись о поступлениях (сырая доска)
-    const wetWoodCondition =
-      await this.woodConditionService.findWoodConditionByName('Сырая');
-
-    if (!wetWoodCondition) {
-      throw new HttpException(
-        "Состояния доски 'сырая' нет в базе",
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
-    let newAmount = oldWorkshopOutAmount;
-    let action: 'add' | 'subtract' = 'add';
-
-    if (oldWorkshopOutAmount > workshopOut.amount) {
-      newAmount = oldWorkshopOutAmount - workshopOut.amount;
-      action = 'subtract';
-    }
-
-    if (oldWorkshopOutAmount < workshopOut.amount) {
-      newAmount = workshopOut.amount - oldWorkshopOutAmount;
-    }
-
-    // Изменить запись на складе (сырая доска)
-    await this.updateWarehouseRecord({
-      amount: newAmount,
-      woodClassId: workshopOut.woodClassId,
-      woodTypeId: workshopOut.woodTypeId,
-      dimensionId: workshopOut.dimensionId,
-      action: action,
-      isUpdate: true,
-    });
 
     return workshopOut;
   }
@@ -513,8 +505,10 @@ export class WorkshopOutService {
   }
 
   async deleteWorkshopOutFromWorkshop(workshopOutId: number) {
-    const workshopOut =
-      await this.workshopOutRepository.findByPk(workshopOutId);
+    const workshopOut = await this.workshopOutRepository.findByPk(
+      workshopOutId,
+      { include: [WoodClass, WoodType, Dimension] },
+    );
 
     if (!workshopOut) {
       throw new HttpException(
@@ -522,8 +516,6 @@ export class WorkshopOutService {
         HttpStatus.NOT_FOUND,
       );
     }
-
-    await workshopOut.destroy();
 
     // Изменить запись о поступлениях (сырая доска)
     const wetWoodCondition =
@@ -539,11 +531,28 @@ export class WorkshopOutService {
     // Изменить запись на складе (сырая доска)
     await this.updateWarehouseRecord({
       amount: workshopOut.amount,
-      woodClassId: workshopOut.woodClassId,
-      woodTypeId: workshopOut.woodTypeId,
-      dimensionId: workshopOut.dimensionId,
+      woodClass: workshopOut.woodClass,
+      woodType: workshopOut.woodType,
+      dimension: workshopOut.dimension,
       action: 'subtract',
+      errorMessages: {
+        noSuchRecord: ({ woodType, woodClass, dimension, woodCondition }) =>
+          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
+           Запись о выходе из цеха не была удалена`,
+        notEnoughAmount: ({
+          woodCondition,
+          warehouseAmount,
+          newRecordAmount,
+          woodType,
+          woodClass,
+          dimension,
+        }) =>
+          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
+            Удалить запись о выходе из цеха на ${newRecordAmount} шт невозможно.`,
+      },
     });
+
+    await workshopOut.destroy();
   }
 
   async findWorkshopOutById(workshopOutId: number) {
