@@ -165,7 +165,30 @@ export class BeamWarehouseService {
             },
           });
 
-        const totalVolume = warehouseRecordsByWoodType.reduce(
+        const balanceWarehouseRecordsByWoodType = [];
+        const sawingWarehouseRecordsByWoodType = [];
+
+        warehouseRecordsByWoodType.forEach((warehouseRecord) => {
+          // 14см - максимальный диаметр баланса
+          if (warehouseRecord.woodNaming.maxDiameter === 14) {
+            balanceWarehouseRecordsByWoodType.push(warehouseRecord);
+
+            return;
+          }
+
+          sawingWarehouseRecordsByWoodType.push(warehouseRecord);
+        });
+
+        const totalBalanceVolume = balanceWarehouseRecordsByWoodType.reduce(
+          (total, warehouseRecord) => {
+            const volume = Number(warehouseRecord.volume);
+
+            return total + volume;
+          },
+          0,
+        );
+
+        const totalSawingVolume = sawingWarehouseRecordsByWoodType.reduce(
           (total, warehouseRecord) => {
             const volume = Number(warehouseRecord.volume);
 
@@ -177,7 +200,8 @@ export class BeamWarehouseService {
         output.push({
           woodTypeId: woodType.id,
           woodTypeName: woodType.name,
-          totalVolume: Number(totalVolume.toFixed(4)),
+          balanceVolume: Number(totalBalanceVolume.toFixed(4)),
+          sawingVolume: Number(totalSawingVolume.toFixed(4)),
         });
       }),
     );
