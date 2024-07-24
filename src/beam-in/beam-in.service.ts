@@ -68,11 +68,11 @@ export class BeamInService {
     if (action === 'subtract') {
       newVolume = Number(existentWarehouseRecord.volume) - volume;
 
-      if (existentWarehouseRecord.volume < newVolume) {
+      if (newVolume < 0) {
         throw new HttpException(
           errorMessages.notEnoughVolume({
             warehouseVolume: existentWarehouseRecord.volume,
-            newRecordVolume: volume,
+            newRecordVolume: Number(volume).toFixed(4),
             woodNaming: woodNaming.name.toLocaleLowerCase(),
           }),
           HttpStatus.BAD_REQUEST,

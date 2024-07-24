@@ -82,26 +82,22 @@ export class WoodArrivalService {
 
     let newAmount = existentWarehouseRecord.amount;
 
-    if (isCreate) {
+    if (action === 'add') {
       newAmount = existentWarehouseRecord.amount + amount;
-    } else {
-      if (action === 'add') {
-        newAmount = existentWarehouseRecord.amount + amount;
-      }
+    }
 
-      if (action === 'subtract') {
-        newAmount = existentWarehouseRecord.amount - amount;
+    if (action === 'subtract') {
+      newAmount = existentWarehouseRecord.amount - amount;
 
-        if (existentWarehouseRecord.amount < newAmount) {
-          return errorMessages?.notEnoughAmount({
-            warehouseAmount: existentWarehouseRecord.amount,
-            newRecordAmount: amount,
-            woodClass: woodClass.name.toLowerCase(),
-            woodType: woodType.name.toLowerCase(),
-            woodCondition: woodCondition.name.toLowerCase(),
-            dimension: `${dimension.width}x${dimension.thickness}x${dimension.length}`,
-          });
-        }
+      if (newAmount < 0) {
+        return errorMessages?.notEnoughAmount({
+          warehouseAmount: existentWarehouseRecord.amount,
+          newRecordAmount: amount,
+          woodClass: woodClass.name.toLowerCase(),
+          woodType: woodType.name.toLowerCase(),
+          woodCondition: woodCondition.name.toLowerCase(),
+          dimension: `${dimension.width}x${dimension.thickness}x${dimension.length}`,
+        });
       }
     }
 
@@ -297,7 +293,7 @@ export class WoodArrivalService {
       action: action,
       errorMessages: {
         noSuchRecord: ({ woodType, woodClass, dimension, woodCondition }) =>
-          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "${woodClass}", "${dimension}". 
+          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
            Запись о поступлении не была изменена`,
         notEnoughAmount: ({
           woodCondition,
@@ -307,7 +303,7 @@ export class WoodArrivalService {
           woodClass,
           dimension,
         }) =>
-          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "${woodClass}", "${dimension}". 
+          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
             Изменить запись о поступлении на ${newRecordAmount} шт невозможно.`,
       },
     });
@@ -436,7 +432,7 @@ export class WoodArrivalService {
       action: 'subtract',
       errorMessages: {
         noSuchRecord: ({ woodType, woodClass, dimension, woodCondition }) =>
-          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "${woodClass}", "${dimension}". 
+          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
            Запись о поступлении не была удалена`,
         notEnoughAmount: ({
           woodCondition,
@@ -446,7 +442,7 @@ export class WoodArrivalService {
           woodClass,
           dimension,
         }) =>
-          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "${woodClass}", "${dimension}". 
+          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
             Удалить запись о поступлении на ${newRecordAmount} шт невозможно.`,
       },
     });

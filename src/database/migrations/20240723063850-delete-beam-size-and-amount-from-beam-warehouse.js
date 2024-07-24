@@ -13,10 +13,10 @@ module.exports = {
     await queryInterface.removeColumn('beam_warehouse', 'amount');
     await queryInterface.removeColumn('beam_warehouse', 'beam_size_id');
 
-    await queryInterface.removeConstraint(
-      'beam_warehouse',
-      'beam_warehouse_beam_size_id_fkey',
-    );
+    // await queryInterface.removeConstraint(
+    //   'beam_warehouse',
+    //   'beam_warehouse_beam_size_id_fkey',
+    // );
   },
 
   async down(queryInterface, Sequelize) {

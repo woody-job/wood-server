@@ -78,7 +78,7 @@ export class WoodShipmentService {
     if (action === 'subtract') {
       newAmount = existentWarehouseRecord.amount - amount;
 
-      if (existentWarehouseRecord.amount < newAmount) {
+      if (newAmount < 0) {
         return errorMessages?.notEnoughAmount({
           warehouseAmount: existentWarehouseRecord.amount,
           newRecordAmount: amount,
@@ -161,17 +161,18 @@ export class WoodShipmentService {
       action: 'subtract',
       errorMessages: {
         noSuchRecord: ({ woodType, woodClass, dimension, woodCondition }) =>
-          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "${woodClass}", "${dimension}". 
+          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
            Запись об отгрузке не была создана`,
         notEnoughAmount: ({
+          woodCondition,
           warehouseAmount,
           newRecordAmount,
           woodType,
           woodClass,
           dimension,
         }) =>
-          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "${woodClass}", "${dimension}". 
-            Изменить запись об отгрузке на ${newRecordAmount} шт невозможно.`,
+          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
+            Создать запись об отгрузке на ${newRecordAmount} шт невозможно.`,
       },
     });
 
@@ -282,7 +283,21 @@ export class WoodShipmentService {
 
     const woodShipment = await this.woodShipmentRepository.findByPk(
       woodShipmentId,
-      { include: [WoodClass, WoodType, Dimension, WoodCondition] },
+      {
+        include: [
+          WoodClass,
+          WoodType,
+          {
+            model: Dimension,
+            as: 'dimension',
+          },
+          {
+            model: Dimension,
+            as: 'dimensionForSale',
+          },
+          WoodCondition,
+        ],
+      },
     );
 
     if (!woodShipment) {
@@ -336,7 +351,7 @@ export class WoodShipmentService {
       action: action,
       errorMessages: {
         noSuchRecord: ({ woodType, woodClass, dimension, woodCondition }) =>
-          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "${woodClass}", "${dimension}". 
+          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
            Запись об отгрузке не была изменена`,
         notEnoughAmount: ({
           woodCondition,
@@ -346,7 +361,7 @@ export class WoodShipmentService {
           woodClass,
           dimension,
         }) =>
-          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "${woodClass}", "${dimension}". 
+          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
             Изменить запись об отгрузке на ${newRecordAmount} шт невозможно.`,
       },
     });
@@ -473,7 +488,21 @@ export class WoodShipmentService {
   async deleteWoodShipment(woodShipmentId: number) {
     const woodShipment = await this.woodShipmentRepository.findByPk(
       woodShipmentId,
-      { include: [WoodClass, WoodType, Dimension, WoodCondition] },
+      {
+        include: [
+          WoodClass,
+          WoodType,
+          {
+            model: Dimension,
+            as: 'dimension',
+          },
+          {
+            model: Dimension,
+            as: 'dimensionForSale',
+          },
+          WoodCondition,
+        ],
+      },
     );
 
     if (!woodShipment) {
@@ -493,7 +522,7 @@ export class WoodShipmentService {
       action: 'add',
       errorMessages: {
         noSuchRecord: ({ woodType, woodClass, dimension, woodCondition }) =>
-          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "${woodClass}", "${dimension}". 
+          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
            Запись об отгрузке не была удалена`,
         notEnoughAmount: ({
           woodCondition,
@@ -503,7 +532,7 @@ export class WoodShipmentService {
           woodClass,
           dimension,
         }) =>
-          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "${woodClass}", "${dimension}". 
+          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
             Удалить запись об отгрузке на ${newRecordAmount} шт невозможно.`,
       },
     });

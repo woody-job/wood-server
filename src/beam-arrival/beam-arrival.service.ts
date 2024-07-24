@@ -74,10 +74,10 @@ export class BeamArrivalService {
       if (action === 'subtract') {
         newVolume = Number(existentWarehouseRecord.volume) - volume;
 
-        if (existentWarehouseRecord.volume < newVolume) {
+        if (newVolume < 0) {
           return errorMessages?.notEnoughVolume({
             warehouseVolume: existentWarehouseRecord.volume,
-            newRecordVolume: volume,
+            newRecordVolume: Number(volume).toFixed(4),
             woodNaming: woodNaming.name.toLocaleLowerCase(),
           });
         }
