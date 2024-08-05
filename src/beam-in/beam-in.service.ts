@@ -71,7 +71,7 @@ export class BeamInService {
       if (newVolume < 0) {
         throw new HttpException(
           errorMessages.notEnoughVolume({
-            warehouseVolume: existentWarehouseRecord.volume,
+            warehouseVolume: Number(existentWarehouseRecord.volume).toFixed(4),
             newRecordVolume: Number(volume).toFixed(4),
             woodNaming: woodNaming.name.toLocaleLowerCase(),
           }),

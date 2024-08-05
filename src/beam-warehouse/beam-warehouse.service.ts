@@ -130,20 +130,40 @@ export class BeamWarehouseService {
       order: [['id', 'DESC']],
     });
 
+    const woodNamings = await this.woodNamingService.getAllWoodNamings();
+
+    const result = [];
     let totalVolume = 0;
 
-    const output = warehouseRecords.map(({ id, woodNaming, volume }) => {
-      totalVolume += Number(volume);
+    await Promise.all(
+      woodNamings.map(async (woodNaming) => {
+        const warehouseRecordsByWoodNaming = warehouseRecords.filter(
+          (record) => record.woodNaming.id === woodNaming.id,
+        );
 
-      return {
-        id,
-        woodNaming,
-        volume,
-      };
-    });
+        if (warehouseRecordsByWoodNaming.length === 0) {
+          return;
+        }
+
+        const totalVolumeForWoodNaming = warehouseRecordsByWoodNaming.reduce(
+          (volume, currentRecord) => {
+            return volume + Number(currentRecord.volume);
+          },
+          0,
+        );
+
+        result.push({
+          id: woodNaming.id,
+          woodNaming,
+          volume: totalVolumeForWoodNaming,
+        });
+
+        totalVolume += totalVolumeForWoodNaming;
+      }),
+    );
 
     return {
-      data: output,
+      data: result,
       totalVolume: Number(totalVolume.toFixed(4)),
     };
   }
