@@ -163,7 +163,7 @@ export class BeamWarehouseService {
     );
 
     return {
-      data: result,
+      data: warehouseRecords,
       totalVolume: Number(totalVolume.toFixed(4)),
     };
   }
@@ -246,4 +246,76 @@ export class BeamWarehouseService {
   async deleteAllWarehouseRecords() {
     await this.beamWarehouseRepository.truncate({ cascade: true });
   }
+
+  // async mergeWarehouseRecords() {
+  //   const warehouseRecords = await this.beamWarehouseRepository.findAll({
+  //     include: [WoodNaming],
+  //     attributes: {
+  //       exclude: ['woodNamingId'],
+  //     },
+  //     order: [['id', 'DESC']],
+  //   });
+
+  //   await this.deleteAllWarehouseRecords();
+
+  //   console.log('EVERYTHING IS DELETED. THIS IS OLD DATA:', warehouseRecords);
+
+  //   const woodNamings = await this.woodNamingService.getAllWoodNamings();
+
+  //   const result = [];
+  //   let totalVolume = 0;
+
+  //   await Promise.all(
+  //     woodNamings.map(async (woodNaming) => {
+  //       const warehouseRecordsByWoodNaming = warehouseRecords.filter(
+  //         (record) => record.woodNaming.id === woodNaming.id,
+  //       );
+
+  //       if (warehouseRecordsByWoodNaming.length === 0) {
+  //         return;
+  //       }
+
+  //       const totalVolumeForWoodNaming = warehouseRecordsByWoodNaming.reduce(
+  //         (volume, currentRecord) => {
+  //           return volume + Number(currentRecord.volume);
+  //         },
+  //         0,
+  //       );
+
+  //       result.push({
+  //         id: woodNaming.id,
+  //         woodNaming,
+  //         volume: totalVolumeForWoodNaming,
+  //       });
+
+  //       totalVolume += totalVolumeForWoodNaming;
+  //     }),
+  //   );
+
+  //   console.log('THE DATA IS UNITED', result);
+
+  //   await Promise.all(
+  //     result.map(async (record) => {
+  //       await this.createWarehouseRecord({
+  //         woodNamingId: record.woodNaming.id,
+  //         volume: record.volume,
+  //       });
+  //     }),
+  //   );
+
+  //   const output = await this.beamWarehouseRepository.findAll({
+  //     include: [WoodNaming],
+  //     attributes: {
+  //       exclude: ['woodNamingId'],
+  //     },
+  //     order: [['id', 'DESC']],
+  //   });
+
+  //   console.log('THE MERGE IS COMPLETE', output);
+
+  //   // return {
+  //   //   data: warehouseRecords,
+  //   //   totalVolume: Number(totalVolume.toFixed(4)),
+  //   // };
+  // }
 }

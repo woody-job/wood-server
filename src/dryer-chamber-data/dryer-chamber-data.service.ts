@@ -278,6 +278,68 @@ export class DryerChamberDataService {
     const dryerChamber =
       await this.dryerChamberService.findDryerChamberById(dryerChamberId);
 
+    const dimension =
+      await this.dimensionService.findDimensionById(dimensionId);
+
+    const woodClass =
+      await this.woodClassService.findWoodClassById(woodClassId);
+
+    const woodType = await this.woodTypeService.findWoodTypeById(woodTypeId);
+
+    const wetWoodCondition =
+      await this.woodConditionService.findWoodConditionByName('Сырая');
+
+    // Убрать со склада сырую доску
+    const existentWarehouseRecord =
+      await this.warehouseService.findWarehouseRecordByWoodParams({
+        woodConditionId: wetWoodCondition.id,
+        woodClassId: woodClassId,
+        woodTypeId: woodTypeId,
+        dimensionId: dimensionId,
+      });
+
+    await this.warehouseService.updateWarehouseRecord({
+      amount: existentWarehouseRecord.amount - amount,
+      woodConditionId: wetWoodCondition.id,
+      woodClassId: woodClassId,
+      woodTypeId: woodTypeId,
+      dimensionId: dimensionId,
+    });
+
+    const dryerChamberData = await this.dryerChamberDataRepository.create({
+      date,
+      amount,
+      isDrying: true,
+      isTakenOut: false,
+      chamberIterationCountWhenBringingIn,
+    });
+
+    await dryerChamberData.$set('woodClass', woodClassId);
+    dryerChamberData.woodClass = woodClass;
+
+    await dryerChamberData.$set('woodType', woodTypeId);
+    dryerChamberData.woodType = woodType;
+
+    await dryerChamberData.$set('dimension', dimensionId);
+    dryerChamberData.dimension = dimension;
+
+    await dryerChamberData.$set('dryerChamber', dryerChamberId);
+    dryerChamberData.dryerChamber = dryerChamber;
+  }
+
+  async checkForErrorsBeforeCreate({
+    dryerChamberId,
+    dryerChamberDataDto,
+  }: {
+    dryerChamberId: number;
+    dryerChamberDataDto: CreateDryerChamberDataDto;
+  }) {
+    const { dimensionId, woodClassId, woodTypeId, date, amount } =
+      dryerChamberDataDto;
+
+    const dryerChamber =
+      await this.dryerChamberService.findDryerChamberById(dryerChamberId);
+
     if (!dryerChamber) {
       return 'Выбранная сушильная камера не найдена';
     }
@@ -309,7 +371,6 @@ export class DryerChamberDataService {
       return "Состояния доски 'Сырая' нет в базе";
     }
 
-    // Убрать со склада сырую доску
     const existentWarehouseRecord =
       await this.warehouseService.findWarehouseRecordByWoodParams({
         woodConditionId: wetWoodCondition.id,
@@ -331,33 +392,7 @@ export class DryerChamberDataService {
           Невозможно внести ${amount} шт досок в сушилку.`;
     }
 
-    await this.warehouseService.updateWarehouseRecord({
-      amount: existentWarehouseRecord.amount - amount,
-      woodConditionId: wetWoodCondition.id,
-      woodClassId: woodClassId,
-      woodTypeId: woodTypeId,
-      dimensionId: dimensionId,
-    });
-
-    const dryerChamberData = await this.dryerChamberDataRepository.create({
-      date,
-      amount,
-      isDrying: true,
-      isTakenOut: false,
-      chamberIterationCountWhenBringingIn,
-    });
-
-    await dryerChamberData.$set('woodClass', woodClassId);
-    dryerChamberData.woodClass = woodClass;
-
-    await dryerChamberData.$set('woodType', woodTypeId);
-    dryerChamberData.woodType = woodType;
-
-    await dryerChamberData.$set('dimension', dimensionId);
-    dryerChamberData.dimension = dimension;
-
-    await dryerChamberData.$set('dryerChamber', dryerChamberId);
-    dryerChamberData.dryerChamber = dryerChamber;
+    return null;
   }
 
   async bringWoodInChamber(
@@ -393,21 +428,30 @@ export class DryerChamberDataService {
 
     const newIterationCount = dryerChamber.chamberIterationCount + 1;
 
-    const errors = (
+    const errorsCheck = (
       await Promise.all(
         dryerChamberDataDtos.map(async (dryerChamberDataDto) => {
-          return await this.createDryerChamberDataRecord({
+          return await this.checkForErrorsBeforeCreate({
             dryerChamberId,
             dryerChamberDataDto,
-            chamberIterationCountWhenBringingIn: newIterationCount,
           });
         }),
       )
     ).filter((error) => error !== undefined && error !== null);
 
-    if (errors.length !== 0) {
-      return errors;
+    if (errorsCheck.length !== 0) {
+      return errorsCheck;
     }
+
+    await Promise.all(
+      dryerChamberDataDtos.map(async (dryerChamberDataDto) => {
+        return await this.createDryerChamberDataRecord({
+          dryerChamberId,
+          dryerChamberDataDto,
+          chamberIterationCountWhenBringingIn: newIterationCount,
+        });
+      }),
+    );
 
     // Цикл сушильной камеры обновляется при
     // занесении доски.

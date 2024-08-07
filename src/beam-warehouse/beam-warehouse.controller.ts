@@ -38,4 +38,9 @@ export class BeamWarehouseController {
       Number(warehouseRecordId),
     );
   }
+
+  // @Get('/adventure')
+  // mergeRecords() {
+  //   return this.beamWarehouseService.mergeWarehouseRecords();
+  // }
 }
