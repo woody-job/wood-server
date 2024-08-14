@@ -94,10 +94,12 @@ export class BeamArrivalService {
     beamArrivalDto,
     supplier,
     woodType,
+    newPartyNumber,
   }: {
     beamArrivalDto: CreateBeamArrivalDto;
     supplier: Supplier | null;
     woodType: WoodType | null;
+    newPartyNumber: number;
   }) {
     const {
       date,
@@ -157,6 +159,7 @@ export class BeamArrivalService {
 
     const beamArrival = await this.beamArrivalRepository.create({
       date,
+      partyNumber: newPartyNumber,
       ...(amount ? { amount } : {}),
       ...(deliveryMethod ? { deliveryMethod } : {}),
       volume: Number(totalRecordVolume.toFixed(4)),
@@ -209,6 +212,23 @@ export class BeamArrivalService {
       );
     }
 
+    const beamArrivalsInSelectedDay = (
+      await this.getAllBeamArrivals({
+        startDate: beamArrivalDtos[0].date,
+        endDate: beamArrivalDtos[0].date,
+      })
+    ).data;
+
+    let previousPartyNumber = 0;
+
+    if (beamArrivalsInSelectedDay.length > 0) {
+      beamArrivalsInSelectedDay.forEach((beamArrival) => {
+        if (beamArrival.partyNumber > previousPartyNumber) {
+          previousPartyNumber = beamArrival.partyNumber;
+        }
+      });
+    }
+
     const errors = (
       await Promise.all(
         beamArrivalDtos.map(async (beamArrivalDto) => {
@@ -216,6 +236,7 @@ export class BeamArrivalService {
             beamArrivalDto,
             supplier,
             woodType,
+            newPartyNumber: previousPartyNumber + 1,
           });
         }),
       )
@@ -360,7 +381,7 @@ export class BeamArrivalService {
             }
           : {}),
       },
-      order: [['date', 'DESC']],
+      order: [['id', 'DESC']],
     });
 
     let totalVolume = 0;
