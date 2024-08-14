@@ -21,6 +21,7 @@ interface BeamArrivalCreationAttrs {
   deliveryMethod?: string;
   amount?: number;
   volume: number;
+  partyNumber: number;
 }
 
 export enum BEAM_DELIVERY_METHOD {
@@ -48,6 +49,16 @@ export class BeamArrival extends Model<BeamArrival, BeamArrivalCreationAttrs> {
     allowNull: false,
   })
   date: string;
+
+  @ApiProperty({
+    example: '1',
+    description: 'Номер партии',
+  })
+  @Column({
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  })
+  partyNumber: number;
 
   @ApiProperty({
     example: 'SUPPLIER_TRANSPORT',
