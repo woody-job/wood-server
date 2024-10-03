@@ -195,18 +195,20 @@ export class BeamShipmentService {
       );
     }
 
+    const errors = [];
+
     // Проверка на наличие условного обозначения с необходимым диапазоном диаметров
-    const errors = (
-      await Promise.all(
-        beamShipmentDtos.map(async (beamShipmentDto) => {
-          return await this.createBeamShipment({
-            beamShipmentDto,
-            buyer,
-            woodType,
-          });
-        }),
-      )
-    ).filter((error) => error !== undefined && error !== null);
+    for (const beamShipmentDto of beamShipmentDtos) {
+      const error = await this.createBeamShipment({
+        beamShipmentDto,
+        buyer,
+        woodType,
+      });
+
+      if (error) {
+        errors.push(error);
+      }
+    }
 
     if (errors.length !== 0) {
       return errors;
