@@ -39,7 +39,6 @@ export class WoodArrivalService {
     dimension,
     woodCondition,
     action = 'add',
-    isCreate = false,
     errorMessages,
   }: {
     amount: number;
@@ -48,21 +47,8 @@ export class WoodArrivalService {
     dimension: Dimension;
     woodCondition: WoodCondition;
     action?: 'add' | 'subtract';
-    isCreate?: boolean;
     errorMessages?: WoodWarehouseErrorsType | undefined;
   }) {
-    if (isCreate) {
-      await this.warehouseService.createWarehouseRecord({
-        amount: amount,
-        woodConditionId: woodCondition.id,
-        woodClassId: woodClass.id,
-        woodTypeId: woodType.id,
-        dimensionId: dimension.id,
-      });
-
-      return;
-    }
-
     const existentWarehouseRecord =
       await this.warehouseService.findWarehouseRecordByWoodParams({
         woodConditionId: woodCondition.id,
@@ -72,12 +58,15 @@ export class WoodArrivalService {
       });
 
     if (!existentWarehouseRecord) {
-      return errorMessages?.noSuchRecord({
-        woodClass: woodClass.name.toLowerCase(),
-        woodType: woodType.name.toLowerCase(),
-        woodCondition: woodCondition.name.toLowerCase(),
-        dimension: `${dimension.width}x${dimension.thickness}x${dimension.length}`,
+      await this.warehouseService.createWarehouseRecord({
+        amount: amount,
+        woodConditionId: woodCondition.id,
+        woodClassId: woodClass.id,
+        woodTypeId: woodType.id,
+        dimensionId: dimension.id,
       });
+
+      return;
     }
 
     let newAmount = existentWarehouseRecord.amount;
@@ -157,7 +146,6 @@ export class WoodArrivalService {
       woodType,
       dimension,
       woodCondition,
-      isCreate: true,
     });
 
     const woodArrival = await this.woodArrivalRepository.create({
@@ -212,17 +200,19 @@ export class WoodArrivalService {
       );
     }
 
-    const errors = (
-      await Promise.all(
-        woodArrivalDtos.map(async (woodArrivalDto) => {
-          return await this.createWoodArrival({
-            woodArrivalDto,
-            supplier,
-            woodCondition,
-          });
-        }),
-      )
-    ).filter((error) => error !== undefined && error !== null);
+    const errors = [];
+
+    for (const woodArrivalDto of woodArrivalDtos) {
+      const error = await this.createWoodArrival({
+        woodArrivalDto,
+        supplier,
+        woodCondition,
+      });
+
+      if (error) {
+        errors.push(error);
+      }
+    }
 
     if (errors.length !== 0) {
       return errors;
