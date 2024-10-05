@@ -255,18 +255,20 @@ export class WoodShipmentService {
       );
     }
 
-    const errors = (
-      await Promise.all(
-        woodShipmentDtos.map(async (woodShipmentDto) => {
-          return await this.createWoodShipment({
-            woodShipmentDto,
-            buyer,
-            personInCharge,
-            woodCondition,
-          });
-        }),
-      )
-    ).filter((error) => error !== undefined && error !== null);
+    const errors = [];
+
+    for (const woodShipmentDto of woodShipmentDtos) {
+      const error = await this.createWoodShipment({
+        woodShipmentDto,
+        buyer,
+        personInCharge,
+        woodCondition,
+      });
+
+      if (error) {
+        errors.push(error);
+      }
+    }
 
     if (errors.length !== 0) {
       return errors;

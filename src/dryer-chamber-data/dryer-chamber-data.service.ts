@@ -78,7 +78,7 @@ export class DryerChamberDataService {
 
     return {
       data: dryerChamberDatas,
-      totalVolume: Number(totalVolume.toFixed(2)),
+      totalVolume: Number(totalVolume.toFixed(4)),
     };
   }
 
@@ -105,27 +105,17 @@ export class DryerChamberDataService {
       const chamberDataDimension = dryerChamberData.dimension;
       const chamberDataWoodType = dryerChamberData.woodType;
 
-      const existentOutputData = outputData.find(
-        (output) =>
-          output.dimension.width === chamberDataDimension.width &&
-          output.dimension.thickness === chamberDataDimension.thickness &&
-          output.dimension.length === chamberDataDimension.length &&
-          output.woodType.id === chamberDataWoodType.id,
-      );
-
-      const outputItem = existentOutputData
-        ? existentOutputData
-        : {
-            id: 0,
-            dimension: chamberDataDimension,
-            woodType: chamberDataWoodType,
-            amount: 0,
-            firstClassVolume: 0,
-            secondClassVolume: 0,
-            marketClassVolume: 0,
-            brownClassVolume: 0,
-            totalVolume: 0,
-          };
+      const outputItem = {
+        id: 0,
+        dimension: chamberDataDimension,
+        woodType: chamberDataWoodType,
+        amount: 0,
+        firstClassVolume: 0,
+        secondClassVolume: 0,
+        marketClassVolume: 0,
+        brownClassVolume: 0,
+        totalVolume: 0,
+      };
 
       let woodClassKey = '';
 
@@ -160,16 +150,14 @@ export class DryerChamberDataService {
           outputItem.secondClassVolume +
           outputItem.marketClassVolume +
           outputItem.brownClassVolume
-        ).toFixed(2),
+        ).toFixed(4),
       );
 
       outputItem.id = Number(
         `${outputItem.dimension.id}${outputItem.woodType.id}`,
       );
 
-      if (!existentOutputData) {
-        outputData.push(outputItem);
-      }
+      outputData.push(outputItem);
     });
 
     totalVolume = outputData.reduce((total, current) => {
@@ -177,7 +165,7 @@ export class DryerChamberDataService {
     }, 0);
 
     return {
-      totalVolume: Number(totalVolume.toFixed(2)),
+      totalVolume: Number(totalVolume.toFixed(4)),
       data: outputData,
     };
   }
@@ -259,7 +247,7 @@ export class DryerChamberDataService {
 
     return {
       data: dryerChamberDatas,
-      totalVolume: Number(totalVolume.toFixed(2)),
+      totalVolume: Number(totalVolume.toFixed(4)),
     };
   }
 
@@ -428,30 +416,30 @@ export class DryerChamberDataService {
 
     const newIterationCount = dryerChamber.chamberIterationCount + 1;
 
-    const errorsCheck = (
-      await Promise.all(
-        dryerChamberDataDtos.map(async (dryerChamberDataDto) => {
-          return await this.checkForErrorsBeforeCreate({
-            dryerChamberId,
-            dryerChamberDataDto,
-          });
-        }),
-      )
-    ).filter((error) => error !== undefined && error !== null);
+    const errors = [];
 
-    if (errorsCheck.length !== 0) {
-      return errorsCheck;
+    for (const dryerChamberDataDto of dryerChamberDataDtos) {
+      const error = await this.checkForErrorsBeforeCreate({
+        dryerChamberId,
+        dryerChamberDataDto,
+      });
+
+      if (error) {
+        errors.push(error);
+      }
     }
 
-    await Promise.all(
-      dryerChamberDataDtos.map(async (dryerChamberDataDto) => {
-        return await this.createDryerChamberDataRecord({
-          dryerChamberId,
-          dryerChamberDataDto,
-          chamberIterationCountWhenBringingIn: newIterationCount,
-        });
-      }),
-    );
+    if (errors.length !== 0) {
+      return errors;
+    }
+
+    for (const dryerChamberDataDto of dryerChamberDataDtos) {
+      await this.createDryerChamberDataRecord({
+        dryerChamberId,
+        dryerChamberDataDto,
+        chamberIterationCountWhenBringingIn: newIterationCount,
+      });
+    }
 
     // Цикл сушильной камеры обновляется при
     // занесении доски.
@@ -532,13 +520,16 @@ export class DryerChamberDataService {
       );
     }
 
-    const errors = (
-      await Promise.all(
-        dryerChamberDatas.map(async (dryerChamberData) => {
-          return await this.removeSingleWoodPackFromChamber(dryerChamberData);
-        }),
-      )
-    ).filter((error) => error !== undefined && error !== null);
+    const errors = [];
+
+    for (const dryerChamberData of dryerChamberDatas) {
+      const error =
+        await this.removeSingleWoodPackFromChamber(dryerChamberData);
+
+      if (error) {
+        errors.push(error);
+      }
+    }
 
     if (errors.length !== 0) {
       return errors;

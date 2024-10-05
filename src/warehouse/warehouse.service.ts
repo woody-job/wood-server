@@ -207,27 +207,17 @@ export class WarehouseService {
       const recordDimension = warehouseRecord.dimension;
       const recordWoodType = warehouseRecord.woodType;
 
-      const existentOutputData = outputData.find(
-        (output) =>
-          output.dimension.width === recordDimension.width &&
-          output.dimension.thickness === recordDimension.thickness &&
-          output.dimension.length === recordDimension.length &&
-          output.woodType.id === recordWoodType.id,
-      );
-
-      const outputItem = existentOutputData
-        ? existentOutputData
-        : {
-            id: 0,
-            dimension: recordDimension,
-            woodType: recordWoodType,
-            amount: 0,
-            firstClassVolume: 0,
-            secondClassVolume: 0,
-            marketClassVolume: 0,
-            brownClassVolume: 0,
-            totalVolume: 0,
-          };
+      const outputItem = {
+        id: 0,
+        dimension: recordDimension,
+        woodType: recordWoodType,
+        amount: 0,
+        firstClassVolume: 0,
+        secondClassVolume: 0,
+        marketClassVolume: 0,
+        brownClassVolume: 0,
+        totalVolume: 0,
+      };
 
       let woodClassKey = '';
 
@@ -262,16 +252,14 @@ export class WarehouseService {
           outputItem.secondClassVolume +
           outputItem.marketClassVolume +
           outputItem.brownClassVolume
-        ).toFixed(2),
+        ).toFixed(4),
       );
 
       outputItem.id = Number(
         `${outputItem.dimension.id}${outputItem.woodType.id}`,
       );
 
-      if (!existentOutputData) {
-        outputData.push(outputItem);
-      }
+      outputData.push(outputItem);
     });
 
     totalVolume = outputData.reduce((total, current) => {
@@ -279,7 +267,7 @@ export class WarehouseService {
     }, 0);
 
     return {
-      totalVolume: Number(totalVolume.toFixed(2)),
+      totalVolume: Number(totalVolume.toFixed(4)),
       data: outputData,
     };
   }
