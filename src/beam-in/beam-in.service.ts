@@ -159,9 +159,20 @@ export class BeamInService {
       );
     }
 
-    const isBeamSizeInWoodNamingBoundaries =
+    let isBeamSizeInWoodNamingBoundaries = false;
+
+    // Если крупный лес
+    if (woodNaming.maxDiameter === null) {
+      isBeamSizeInWoodNamingBoundaries =
+        woodNaming.minDiameter! <= beamSize.diameter;
+    } else if (woodNaming.minDiameter === null) {
+      // Если пиловочник
+      isBeamSizeInWoodNamingBoundaries =
+        woodNaming.maxDiameter! >= beamSize.diameter;
+    } else {
       woodNaming.maxDiameter! >= beamSize.diameter &&
-      woodNaming.minDiameter! <= beamSize.diameter;
+        woodNaming.minDiameter! <= beamSize.diameter;
+    }
 
     if (!isBeamSizeInWoodNamingBoundaries) {
       throw new HttpException(
