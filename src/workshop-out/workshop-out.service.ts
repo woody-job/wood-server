@@ -94,17 +94,7 @@ export class WorkshopOutService {
       });
 
     if (!existentWarehouseRecord) {
-      // throw new HttpException(
-      //   errorMessages?.noSuchRecord({
-      //     woodClass: woodClass.name.toLowerCase(),
-      //     woodType: woodType.name.toLowerCase(),
-      //     woodCondition: wetWoodCondition.name.toLowerCase(),
-      //     dimension: `${dimension.width}x${dimension.thickness}x${dimension.length}`,
-      //   }),
-      //   HttpStatus.BAD_REQUEST,
-      // );
-
-      // Как поступление сырой доски (тут тоже аккуратно, нужно проверять)
+      // Как поступление сырой доски
       await this.warehouseService.createWarehouseRecord({
         amount: amount,
         woodConditionId: wetWoodCondition.id,
@@ -124,20 +114,6 @@ export class WorkshopOutService {
 
     if (action === 'subtract') {
       newAmount = existentWarehouseRecord.amount - amount;
-
-      // if (newAmount < 0) {
-      //   throw new HttpException(
-      //     errorMessages?.notEnoughAmount({
-      //       warehouseAmount: existentWarehouseRecord.amount,
-      //       newRecordAmount: amount,
-      //       woodClass: woodClass.name.toLowerCase(),
-      //       woodType: woodType.name.toLowerCase(),
-      //       woodCondition: wetWoodCondition.name.toLowerCase(),
-      //       dimension: `${dimension.width}x${dimension.thickness}x${dimension.length}`,
-      //     }),
-      //     HttpStatus.BAD_REQUEST,
-      //   );
-      // }
     }
 
     await this.warehouseService.updateWarehouseRecord({

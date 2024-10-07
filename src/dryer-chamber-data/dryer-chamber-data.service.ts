@@ -286,13 +286,24 @@ export class DryerChamberDataService {
         dimensionId: dimensionId,
       });
 
-    await this.warehouseService.updateWarehouseRecord({
-      amount: existentWarehouseRecord.amount - amount,
-      woodConditionId: wetWoodCondition.id,
-      woodClassId: woodClassId,
-      woodTypeId: woodTypeId,
-      dimensionId: dimensionId,
-    });
+    if (!existentWarehouseRecord) {
+      // Как отгрузка для сырой доски
+      await this.warehouseService.createWarehouseRecord({
+        amount: -amount,
+        woodConditionId: wetWoodCondition.id,
+        woodClassId: woodClass.id,
+        woodTypeId: woodType.id,
+        dimensionId: dimension.id,
+      });
+    } else {
+      await this.warehouseService.updateWarehouseRecord({
+        amount: existentWarehouseRecord.amount - amount,
+        woodConditionId: wetWoodCondition.id,
+        woodClassId: woodClassId,
+        woodTypeId: woodTypeId,
+        dimensionId: dimensionId,
+      });
+    }
 
     const dryerChamberData = await this.dryerChamberDataRepository.create({
       date,
@@ -322,8 +333,7 @@ export class DryerChamberDataService {
     dryerChamberId: number;
     dryerChamberDataDto: CreateDryerChamberDataDto;
   }) {
-    const { dimensionId, woodClassId, woodTypeId, date, amount } =
-      dryerChamberDataDto;
+    const { dimensionId, woodClassId, woodTypeId } = dryerChamberDataDto;
 
     const dryerChamber =
       await this.dryerChamberService.findDryerChamberById(dryerChamberId);
@@ -358,36 +368,6 @@ export class DryerChamberDataService {
     if (!wetWoodCondition) {
       return "Состояния доски 'Сырая' нет в базе";
     }
-
-    const existentWarehouseRecord =
-      await this.warehouseService.findWarehouseRecordByWoodParams({
-        woodConditionId: wetWoodCondition.id,
-        woodClassId: woodClassId,
-        woodTypeId: woodTypeId,
-        dimensionId: dimensionId,
-      });
-
-    if (!existentWarehouseRecord) {
-      // Как отгрузка для сырой доски
-      await this.warehouseService.createWarehouseRecord({
-        amount: -amount,
-        woodConditionId: wetWoodCondition.id,
-        woodClassId: woodClass.id,
-        woodTypeId: woodType.id,
-        dimensionId: dimension.id,
-      });
-
-      // return `На складе нет доски с параметрами "${wetWoodCondition.name.toLowerCase()}", "${woodType.name.toLowerCase()}", "сорт ${woodClass.name.toLowerCase()}",
-      //       "${dimension.width}x${dimension.thickness}x${dimension.length}".
-      //       Доска не была занесена в сушилку.`;
-    }
-
-    // if (existentWarehouseRecord.amount < amount) {
-    //   return `На складе есть только ${existentWarehouseRecord.amount} шт выбранной доски с параметрами
-    //       "${wetWoodCondition.name.toLowerCase()}", "${woodType.name.toLowerCase()}", "сорт ${woodClass.name.toLowerCase()}",
-    //       "${dimension.width}x${dimension.thickness}x${dimension.length}".
-    //       Невозможно внести ${amount} шт досок в сушилку.`;
-    // }
 
     return dryerChamberDataDto;
   }

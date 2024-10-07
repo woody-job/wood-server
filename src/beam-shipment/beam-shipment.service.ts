@@ -15,7 +15,6 @@ import * as moment from 'moment-timezone';
 import { WoodNaming } from 'src/wood-naming/wood-naming.model';
 import { BeamSize } from 'src/beam-size/beam-size.model';
 import { BeamWarehouseService } from 'src/beam-warehouse/beam-warehouse.service';
-import { BeamWarehouseErrorsType } from 'src/types';
 
 @Injectable()
 export class BeamShipmentService {
@@ -33,12 +32,10 @@ export class BeamShipmentService {
     woodNaming,
     volume,
     action = 'add',
-    errorMessages,
   }: {
     woodNaming: WoodNaming;
     volume: number;
     action?: 'add' | 'subtract';
-    errorMessages: BeamWarehouseErrorsType;
   }) {
     const existentWarehouseRecord =
       await this.beamWarehouseService.findWarehouseRecordByBeamParams({
@@ -46,9 +43,12 @@ export class BeamShipmentService {
       });
 
     if (!existentWarehouseRecord) {
-      return errorMessages.noSuchRecord({
-        woodNaming: woodNaming.name.toLowerCase(),
+      await this.beamWarehouseService.createWarehouseRecord({
+        volume: -volume,
+        woodNamingId: woodNaming.id,
       });
+
+      return;
     }
 
     let newVolume = Number(existentWarehouseRecord.volume);
@@ -59,14 +59,6 @@ export class BeamShipmentService {
 
     if (action === 'subtract') {
       newVolume = Number(existentWarehouseRecord.volume) - volume;
-
-      if (newVolume < 0) {
-        return errorMessages.notEnoughVolume({
-          warehouseVolume: existentWarehouseRecord.volume,
-          newRecordVolume: Number(volume).toFixed(4),
-          woodNaming: woodNaming.name.toLocaleLowerCase(),
-        });
-      }
     }
 
     await this.beamWarehouseService.updateWarehouseRecord({
@@ -125,22 +117,11 @@ export class BeamShipmentService {
       : foundBeamSize.volume * amount;
 
     // Убрать бревна со склада сырья
-    const warehouseError = await this.updateWarehouse({
+    await this.updateWarehouse({
       woodNaming: correspondingWoodNaming,
       action: 'subtract',
       volume: totalRecordVolume,
-      errorMessages: {
-        noSuchRecord: ({ woodNaming }) =>
-          `На складе нет леса "${woodNaming}". Запись об отгрузке не была создана`,
-        notEnoughVolume: ({ warehouseVolume, newRecordVolume, woodNaming }) =>
-          `На складе есть только ${warehouseVolume} м3 выбранного леса "${woodNaming}". 
-            Создать запись об отгрузке ${newRecordVolume} м3 леса невозможно.`,
-      },
     });
-
-    if (warehouseError) {
-      return warehouseError;
-    }
 
     const beamShipment = await this.beamShipmentRepository.create({
       date,
@@ -269,22 +250,11 @@ export class BeamShipmentService {
       action = 'subtract';
     }
 
-    const warehouseError = await this.updateWarehouse({
+    await this.updateWarehouse({
       woodNaming: beamShipment.woodNaming,
       action,
       volume: newVolume,
-      errorMessages: {
-        noSuchRecord: ({ woodNaming }) =>
-          `На складе нет леса "${woodNaming}". Запись об отгрузке не была изменена`,
-        notEnoughVolume: ({ warehouseVolume, newRecordVolume, woodNaming }) =>
-          `На складе есть только ${warehouseVolume} м3 выбранного леса "${woodNaming}". 
-            Изменить запись об отгрузке на ${newRecordVolume} м3 невозможно.`,
-      },
     });
-
-    if (warehouseError) {
-      throw new HttpException(warehouseError, HttpStatus.BAD_REQUEST);
-    }
 
     await beamShipment.save();
 
@@ -389,22 +359,11 @@ export class BeamShipmentService {
     }
 
     // Изменить запись на складе
-    const warehouseError = await this.updateWarehouse({
+    await this.updateWarehouse({
       woodNaming: beamShipment.woodNaming,
       action: 'add',
       volume: beamShipment.volume,
-      errorMessages: {
-        noSuchRecord: ({ woodNaming }) =>
-          `На складе нет леса "${woodNaming}". Запись об отгрузке не была удалена`,
-        notEnoughVolume: ({ warehouseVolume, newRecordVolume, woodNaming }) =>
-          `На складе есть только ${warehouseVolume} м3 выбранного леса "${woodNaming}". 
-            Удалить запись об отгрузке ${newRecordVolume} м3 леса невозможно.`,
-      },
     });
-
-    if (warehouseError) {
-      throw new HttpException(warehouseError, HttpStatus.BAD_REQUEST);
-    }
 
     await beamShipment.destroy();
   }

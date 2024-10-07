@@ -160,14 +160,7 @@ export class WarehouseService {
       );
     }
 
-    // Если новое количество <= 0, то запись на складе удаляется.
-    // ILIA DID STUFF HERE
-    console.log(`\n COMPARE AMOUNT \n`, {
-      amount,
-      type: typeof amount,
-      comparisonToZero: amount === 0,
-    });
-
+    // Если новое количество === 0, то запись на складе удаляется.
     if (amount === 0) {
       await this.deleteWarehouseRecord(warehouseRecord.id);
 

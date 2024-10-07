@@ -58,13 +58,6 @@ export class WoodShipmentService {
       });
 
     if (!existentWarehouseRecord) {
-      // return errorMessages?.noSuchRecord({
-      //   woodClass: woodClass.name.toLowerCase(),
-      //   woodType: woodType.name.toLowerCase(),
-      //   woodCondition: woodCondition.name.toLowerCase(),
-      //   dimension: `${dimension.width}x${dimension.thickness}x${dimension.length}`,
-      // });
-
       await this.warehouseService.createWarehouseRecord({
         amount: -amount,
         woodConditionId: woodCondition.id,
@@ -84,17 +77,6 @@ export class WoodShipmentService {
 
     if (action === 'subtract') {
       newAmount = existentWarehouseRecord.amount - amount;
-
-      // if (newAmount < 0) {
-      //   return errorMessages?.notEnoughAmount({
-      //     warehouseAmount: existentWarehouseRecord.amount,
-      //     newRecordAmount: amount,
-      //     woodClass: woodClass.name.toLowerCase(),
-      //     woodType: woodType.name.toLowerCase(),
-      //     woodCondition: woodCondition.name.toLowerCase(),
-      //     dimension: `${dimension.width}x${dimension.thickness}x${dimension.length}`,
-      //   });
-      // }
     }
 
     await this.warehouseService.updateWarehouseRecord({
