@@ -88,9 +88,9 @@ export class BeamWarehouseService {
       );
     }
 
-    // Если новое количество <= 0, то запись на складе удаляется.
+    // Если новое количество === 0, то запись на складе удаляется.
     // TODO: Здесь нужна проверка и оповещение пользователя
-    if (volume <= 0) {
+    if (volume === 0) {
       await this.deleteWarehouseRecord(warehouseRecord.id);
 
       return;

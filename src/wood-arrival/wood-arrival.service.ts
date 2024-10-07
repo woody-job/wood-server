@@ -17,7 +17,6 @@ import { WoodCondition } from 'src/wood-condition/wood-condition.model';
 import { WarehouseService } from 'src/warehouse/warehouse.service';
 import { SupplierService } from 'src/supplier/supplier.service';
 import { Supplier } from 'src/supplier/supplier.model';
-import { WoodWarehouseErrorsType } from 'src/types';
 
 @Injectable()
 export class WoodArrivalService {
@@ -39,7 +38,6 @@ export class WoodArrivalService {
     dimension,
     woodCondition,
     action = 'add',
-    errorMessages,
   }: {
     amount: number;
     woodClass: WoodClass;
@@ -47,7 +45,6 @@ export class WoodArrivalService {
     dimension: Dimension;
     woodCondition: WoodCondition;
     action?: 'add' | 'subtract';
-    errorMessages?: WoodWarehouseErrorsType | undefined;
   }) {
     const existentWarehouseRecord =
       await this.warehouseService.findWarehouseRecordByWoodParams({
@@ -77,17 +74,6 @@ export class WoodArrivalService {
 
     if (action === 'subtract') {
       newAmount = existentWarehouseRecord.amount - amount;
-
-      if (newAmount < 0) {
-        return errorMessages?.notEnoughAmount({
-          warehouseAmount: existentWarehouseRecord.amount,
-          newRecordAmount: amount,
-          woodClass: woodClass.name.toLowerCase(),
-          woodType: woodType.name.toLowerCase(),
-          woodCondition: woodCondition.name.toLowerCase(),
-          dimension: `${dimension.width}x${dimension.thickness}x${dimension.length}`,
-        });
-      }
     }
 
     await this.warehouseService.updateWarehouseRecord({
@@ -274,33 +260,14 @@ export class WoodArrivalService {
       action = 'add';
     }
 
-    const warehouseError = await this.updateWarehouseRecord({
+    await this.updateWarehouseRecord({
       amount: newAmount,
       woodCondition: woodArrival.woodCondition,
       woodClass: woodArrival.woodClass,
       woodType: woodArrival.woodType,
       dimension: woodArrival.dimension,
       action: action,
-      errorMessages: {
-        noSuchRecord: ({ woodType, woodClass, dimension, woodCondition }) =>
-          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
-           Запись о поступлении не была изменена`,
-        notEnoughAmount: ({
-          woodCondition,
-          warehouseAmount,
-          newRecordAmount,
-          woodType,
-          woodClass,
-          dimension,
-        }) =>
-          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
-            Изменить запись о поступлении на ${newRecordAmount} шт невозможно.`,
-      },
     });
-
-    if (warehouseError) {
-      throw new HttpException(warehouseError, HttpStatus.BAD_REQUEST);
-    }
 
     if (dimension.id !== woodArrival.dimensionId) {
       await woodArrival.$set('dimension', dimensionId);
@@ -395,7 +362,7 @@ export class WoodArrivalService {
 
     return {
       data: woodArrivals,
-      totalVolume: Number(totalVolume.toFixed(2)),
+      totalVolume: Number(totalVolume.toFixed(4)),
     };
   }
 
@@ -413,33 +380,14 @@ export class WoodArrivalService {
     }
 
     // Изменить запись на складе
-    const warehouseError = await this.updateWarehouseRecord({
+    await this.updateWarehouseRecord({
       amount: woodArrival.amount,
       woodClass: woodArrival.woodClass,
       woodType: woodArrival.woodType,
       dimension: woodArrival.dimension,
       woodCondition: woodArrival.woodCondition,
       action: 'subtract',
-      errorMessages: {
-        noSuchRecord: ({ woodType, woodClass, dimension, woodCondition }) =>
-          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
-           Запись о поступлении не была удалена`,
-        notEnoughAmount: ({
-          woodCondition,
-          warehouseAmount,
-          newRecordAmount,
-          woodType,
-          woodClass,
-          dimension,
-        }) =>
-          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
-            Удалить запись о поступлении на ${newRecordAmount} шт невозможно.`,
-      },
     });
-
-    if (warehouseError) {
-      throw new HttpException(warehouseError, HttpStatus.BAD_REQUEST);
-    }
 
     await woodArrival.destroy();
   }
@@ -530,7 +478,7 @@ export class WoodArrivalService {
         car: woodArrival.car,
         supplier: woodArrival.supplier ? woodArrival.supplier.name : null,
         volume: Number(
-          (woodArrival.dimension.volume * woodArrival.amount).toFixed(2),
+          (woodArrival.dimension.volume * woodArrival.amount).toFixed(4),
         ),
       };
 

@@ -160,8 +160,8 @@ export class WarehouseService {
       );
     }
 
-    // Если новое количество <= 0, то запись на складе удаляется.
-    if (amount <= 0) {
+    // Если новое количество === 0, то запись на складе удаляется.
+    if (amount === 0) {
       await this.deleteWarehouseRecord(warehouseRecord.id);
 
       return;
@@ -198,6 +198,7 @@ export class WarehouseService {
       where: {
         woodConditionId,
       },
+      order: [['id', 'DESC']],
     });
 
     let totalVolume = 0;
@@ -207,17 +208,27 @@ export class WarehouseService {
       const recordDimension = warehouseRecord.dimension;
       const recordWoodType = warehouseRecord.woodType;
 
-      const outputItem = {
-        id: 0,
-        dimension: recordDimension,
-        woodType: recordWoodType,
-        amount: 0,
-        firstClassVolume: 0,
-        secondClassVolume: 0,
-        marketClassVolume: 0,
-        brownClassVolume: 0,
-        totalVolume: 0,
-      };
+      const existentOutputData = outputData.find(
+        (output) =>
+          output.dimension.width === recordDimension.width &&
+          output.dimension.thickness === recordDimension.thickness &&
+          output.dimension.length === recordDimension.length &&
+          output.woodType.id === recordWoodType.id,
+      );
+
+      const outputItem = existentOutputData
+        ? existentOutputData
+        : {
+            id: 0,
+            dimension: recordDimension,
+            woodType: recordWoodType,
+            amount: 0,
+            firstClassVolume: 0,
+            secondClassVolume: 0,
+            marketClassVolume: 0,
+            brownClassVolume: 0,
+            totalVolume: 0,
+          };
 
       let woodClassKey = '';
 
@@ -259,7 +270,9 @@ export class WarehouseService {
         `${outputItem.dimension.id}${outputItem.woodType.id}`,
       );
 
-      outputData.push(outputItem);
+      if (!existentOutputData) {
+        outputData.push(outputItem);
+      }
     });
 
     totalVolume = outputData.reduce((total, current) => {
