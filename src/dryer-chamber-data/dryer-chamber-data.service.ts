@@ -368,19 +368,28 @@ export class DryerChamberDataService {
       });
 
     if (!existentWarehouseRecord) {
-      return `На складе нет доски с параметрами "${wetWoodCondition.name.toLowerCase()}", "${woodType.name.toLowerCase()}", "сорт ${woodClass.name.toLowerCase()}", 
-            "${dimension.width}x${dimension.thickness}x${dimension.length}". 
-            Доска не была занесена в сушилку.`;
+      // Как отгрузка для сырой доски
+      await this.warehouseService.createWarehouseRecord({
+        amount: -amount,
+        woodConditionId: wetWoodCondition.id,
+        woodClassId: woodClass.id,
+        woodTypeId: woodType.id,
+        dimensionId: dimension.id,
+      });
+
+      // return `На складе нет доски с параметрами "${wetWoodCondition.name.toLowerCase()}", "${woodType.name.toLowerCase()}", "сорт ${woodClass.name.toLowerCase()}",
+      //       "${dimension.width}x${dimension.thickness}x${dimension.length}".
+      //       Доска не была занесена в сушилку.`;
     }
 
-    if (existentWarehouseRecord.amount < amount) {
-      return `На складе есть только ${existentWarehouseRecord.amount} шт выбранной доски с параметрами 
-          "${wetWoodCondition.name.toLowerCase()}", "${woodType.name.toLowerCase()}", "сорт ${woodClass.name.toLowerCase()}", 
-          "${dimension.width}x${dimension.thickness}x${dimension.length}". 
-          Невозможно внести ${amount} шт досок в сушилку.`;
-    }
+    // if (existentWarehouseRecord.amount < amount) {
+    //   return `На складе есть только ${existentWarehouseRecord.amount} шт выбранной доски с параметрами
+    //       "${wetWoodCondition.name.toLowerCase()}", "${woodType.name.toLowerCase()}", "сорт ${woodClass.name.toLowerCase()}",
+    //       "${dimension.width}x${dimension.thickness}x${dimension.length}".
+    //       Невозможно внести ${amount} шт досок в сушилку.`;
+    // }
 
-    return null;
+    return dryerChamberDataDto;
   }
 
   async bringWoodInChamber(
@@ -417,15 +426,20 @@ export class DryerChamberDataService {
     const newIterationCount = dryerChamber.chamberIterationCount + 1;
 
     const errors = [];
+    const filteredDtos = [];
 
     for (const dryerChamberDataDto of dryerChamberDataDtos) {
-      const error = await this.checkForErrorsBeforeCreate({
+      const checking = await this.checkForErrorsBeforeCreate({
         dryerChamberId,
         dryerChamberDataDto,
       });
 
-      if (error) {
-        errors.push(error);
+      if (typeof checking === 'string') {
+        errors.push(checking);
+      }
+
+      if (typeof checking !== 'string' && checking.amount) {
+        filteredDtos.push(checking);
       }
     }
 
@@ -433,7 +447,7 @@ export class DryerChamberDataService {
       return errors;
     }
 
-    for (const dryerChamberDataDto of dryerChamberDataDtos) {
+    for (const dryerChamberDataDto of filteredDtos) {
       await this.createDryerChamberDataRecord({
         dryerChamberId,
         dryerChamberDataDto,
