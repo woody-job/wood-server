@@ -719,6 +719,12 @@ export class DataManagementService {
     ]);
   }
 
+  async addPlanedWoodCondition() {
+    return await this.woodConditionService.createWoodCondition({
+      name: 'Строганая',
+    });
+  }
+
   async deleteUserCreatedData() {
     // Удаление всех входов в цеха
     await this.beamInService.deleteAllBeamIn();
