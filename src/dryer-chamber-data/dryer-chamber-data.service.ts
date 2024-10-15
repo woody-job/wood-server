@@ -255,14 +255,18 @@ export class DryerChamberDataService {
   async createDryerChamberDataRecord({
     dryerChamberId,
     dryerChamberDataDto,
-    chamberIterationCountWhenBringingIn,
   }: {
     dryerChamberId: number;
     dryerChamberDataDto: CreateDryerChamberDataDto;
-    chamberIterationCountWhenBringingIn: number;
   }) {
-    const { dimensionId, woodClassId, woodTypeId, date, amount } =
-      dryerChamberDataDto;
+    const {
+      dimensionId,
+      woodClassId,
+      woodTypeId,
+      date,
+      amount,
+      chamberIterationCount,
+    } = dryerChamberDataDto;
 
     const dryerChamber =
       await this.dryerChamberService.findDryerChamberById(dryerChamberId);
@@ -311,7 +315,7 @@ export class DryerChamberDataService {
       amount,
       isDrying: true,
       isTakenOut: false,
-      chamberIterationCountWhenBringingIn,
+      chamberIterationCountWhenBringingIn: chamberIterationCount,
     });
 
     await dryerChamberData.$set('woodClass', woodClassId);
@@ -404,8 +408,6 @@ export class DryerChamberDataService {
       );
     }
 
-    const newIterationCount = dryerChamber.chamberIterationCount + 1;
-
     const errors = [];
     const filteredDtos = [];
 
@@ -432,13 +434,8 @@ export class DryerChamberDataService {
       await this.createDryerChamberDataRecord({
         dryerChamberId,
         dryerChamberDataDto,
-        chamberIterationCountWhenBringingIn: newIterationCount,
       });
     }
-
-    // Цикл сушильной камеры обновляется при
-    // занесении доски.
-    dryerChamber.chamberIterationCount = newIterationCount;
 
     await dryerChamber.save();
 
