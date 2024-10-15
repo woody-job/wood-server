@@ -13,6 +13,7 @@ import { CreateDryerChamberDataDto } from './dtos/create-dryer-chamber-data.dto'
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/auth/roles-auth.decorator';
 import { RolesGuard } from 'src/auth/roles.guard';
+import { RemoveWoodFromChamberDto } from './dtos/remove-wood-from-chamber.dto';
 
 @ApiTags('Сушильные камеры')
 @Controller('dryer-chamber-data')
@@ -92,9 +93,13 @@ export class DryerChamberDataController {
   @Roles('SUPERADMIN', 'ADMIN')
   @UseGuards(RolesGuard)
   @Post('/take-out/:dryerChamberId')
-  takeOut(@Param('dryerChamberId') dryerChamberId: string) {
+  takeOut(
+    @Param('dryerChamberId') dryerChamberId: string,
+    @Body() removeWoodFromChamberDtos: RemoveWoodFromChamberDto[],
+  ) {
     return this.dryerChamberDataService.removeWoodFromChamber(
       Number(dryerChamberId),
+      removeWoodFromChamberDtos,
     );
   }
 
