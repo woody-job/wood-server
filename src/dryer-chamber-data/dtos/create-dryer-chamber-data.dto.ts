@@ -16,4 +16,8 @@ export class CreateDryerChamberDataDto {
   @IsNumber()
   @IsNotEmpty()
   readonly amount: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  readonly chamberIterationCount: number;
 }
