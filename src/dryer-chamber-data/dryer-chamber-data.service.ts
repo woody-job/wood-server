@@ -23,6 +23,7 @@ import { WoodShipmentService } from 'src/wood-shipment/wood-shipment.service';
 import { Op, Sequelize } from 'sequelize';
 import * as moment from 'moment-timezone';
 import { DryerChamber } from 'src/dryer-chamber/dryer-chamber.model';
+import { RemoveWoodFromChamberDto } from './dtos/remove-wood-from-chamber.dto';
 
 @Injectable()
 export class DryerChamberDataService {
@@ -489,7 +490,10 @@ export class DryerChamberDataService {
     return dryerChamberData;
   }
 
-  async removeWoodFromChamber(dryerChamberId: number) {
+  async removeWoodFromChamber(
+    dryerChamberId: number,
+    removeWoodFromChamberDtos: RemoveWoodFromChamberDto[],
+  ) {
     const dryerChamber =
       await this.dryerChamberService.findDryerChamberById(dryerChamberId);
 
@@ -513,6 +517,27 @@ export class DryerChamberDataService {
         HttpStatus.NOT_FOUND,
       );
     }
+
+    if (removeWoodFromChamberDtos.length !== dryerChamberDatas.length) {
+      throw new HttpException(
+        'Количество изменяемых записей не соответствует количеству записей в сушке',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Изменить amount & woodClass высохшей доски при необходимости
+    removeWoodFromChamberDtos.forEach((removeDto) => {
+      const correspondingChamberRecord = dryerChamberDatas.find(
+        (data) => data.id === removeDto.dryerChamberDataRecordId,
+      );
+
+      if (!correspondingChamberRecord) {
+        return;
+      }
+
+      correspondingChamberRecord.woodClassId = removeDto.woodClassId;
+      correspondingChamberRecord.amount = removeDto.amount;
+    });
 
     const errors = [];
 
