@@ -352,14 +352,17 @@ export class BeamArrivalService {
     });
 
     let totalVolume = 0;
+    let totalAmount = 0;
 
     beamArrivals.forEach((beamArrival) => {
       totalVolume += beamArrival.volume;
+      totalAmount += beamArrival.amount;
     });
 
     return {
       data: beamArrivals,
       totalVolume: Number(totalVolume.toFixed(4)),
+      totalAmount: Number(totalAmount.toFixed(4)),
     };
   }
 

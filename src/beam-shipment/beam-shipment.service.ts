@@ -323,14 +323,17 @@ export class BeamShipmentService {
     });
 
     let totalVolume = 0;
+    let totalAmount = 0;
 
     beamShipments.forEach((beamShipment) => {
       totalVolume += beamShipment.volume;
+      totalAmount += beamShipment.amount;
     });
 
     return {
       data: beamShipments,
       totalVolume: Number(totalVolume.toFixed(4)),
+      totalAmount: Number(totalAmount.toFixed(4)),
     };
   }
 

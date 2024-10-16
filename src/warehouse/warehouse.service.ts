@@ -202,6 +202,7 @@ export class WarehouseService {
     });
 
     let totalVolume = 0;
+    let totalAmount = 0;
     let outputData = [];
 
     warehouseRecords.forEach((warehouseRecord) => {
@@ -289,8 +290,13 @@ export class WarehouseService {
       return total + current.totalVolume;
     }, 0);
 
+    totalAmount = outputData.reduce((total, current) => {
+      return total + current.amount;
+    }, 0);
+
     return {
       totalVolume: Number(totalVolume.toFixed(4)),
+      totalAmount: Number(totalAmount.toFixed(4)),
       data: outputData,
     };
   }

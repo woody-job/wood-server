@@ -465,15 +465,18 @@ export class WorkshopOutService {
     });
 
     let totalWorkshopOutVolume = 0;
+    let totalWorkshopOutAmount = 0;
 
     workshopOuts.forEach((workshopOut) => {
       totalWorkshopOutVolume +=
         workshopOut.dimension.volume * workshopOut.amount;
+      totalWorkshopOutAmount += workshopOut.amount;
     });
 
     return {
       data: workshopOuts,
       totalWorkshopOutVolume: Number(totalWorkshopOutVolume.toFixed(4)),
+      totalWorkshopOutAmount: Number(totalWorkshopOutAmount.toFixed(4)),
     };
   }
 
@@ -562,6 +565,10 @@ export class WorkshopOutService {
     const woodClasses = await this.woodClassService.getAllWoodClasses();
 
     let output = [];
+    let totalResultBeamInVolume = 0;
+    let totalResultBeamInAmount = 0;
+    let totalResultWoodsVolume = 0;
+    let totalResultWoodsAmount = 0;
 
     await Promise.all(
       days.map(async (dayDate) => {
@@ -574,12 +581,27 @@ export class WorkshopOutService {
           date: dayDate,
         });
 
-        const { totalVolume: totalBeamInVolume } =
-          await this.beamInService.getAllBeamInForWorkshop({
-            workshopId,
-            startDate: dayDate,
-            endDate: dayDate,
-          });
+        const {
+          totalVolume: totalBeamInVolume,
+          totalAmount: totalBeamInAmount,
+        } = await this.beamInService.getAllBeamInForWorkshop({
+          workshopId,
+          startDate: dayDate,
+          endDate: dayDate,
+        });
+
+        totalResultBeamInVolume = Number(
+          (totalResultBeamInVolume + totalBeamInVolume).toFixed(4),
+        );
+        totalResultBeamInAmount = Number(
+          (totalResultBeamInAmount + totalBeamInAmount).toFixed(4),
+        );
+        totalResultWoodsVolume = Number(
+          (totalResultWoodsVolume + totalWorkshopOutVolume).toFixed(4),
+        );
+        totalResultWoodsAmount = Number(
+          (totalResultWoodsAmount + totalWorkshopOutAmount).toFixed(4),
+        );
 
         const {
           totalWoodPrice,
@@ -618,6 +640,7 @@ export class WorkshopOutService {
             : totalBeamInVolume
           ).toFixed(4),
         );
+        outputItem.totalBeamInAmount = totalBeamInAmount;
         outputItem.totalWorkshopOutPercentage =
           workshop.id === 2
             ? totalWorkshopOutPercentageForSecondWorkshop
@@ -717,7 +740,13 @@ export class WorkshopOutService {
       return 0;
     });
 
-    return output;
+    return {
+      data: output,
+      totalBeamInVolume: totalResultBeamInVolume,
+      totalBeamInAmount: totalResultBeamInAmount,
+      totalWoodsVolume: totalResultWoodsVolume,
+      totalWoodsAmount: totalResultWoodsAmount,
+    };
   }
 
   async deleteAllWorkshopOut() {
