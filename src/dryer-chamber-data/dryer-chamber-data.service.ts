@@ -112,9 +112,13 @@ export class DryerChamberDataService {
         woodType: chamberDataWoodType,
         amount: 0,
         firstClassVolume: 0,
+        firstClassAmount: 0,
         secondClassVolume: 0,
+        secondClassAmount: 0,
         marketClassVolume: 0,
+        marketClassAmount: 0,
         thirdClassVolume: 0,
+        thirdClassAmount: 0,
         totalVolume: 0,
       };
 
@@ -143,6 +147,12 @@ export class DryerChamberDataService {
           dryerChamberData.dimension.volume * dryerChamberData.amount
         ).toFixed(4),
       );
+      outputItem[`${woodClassKey}Amount`] = Number(
+        (outputItem[`${woodClassKey}Amount`] + dryerChamberData.amount).toFixed(
+          4,
+        ),
+      );
+
       outputItem.amount += dryerChamberData.amount;
 
       outputItem.totalVolume = Number(
