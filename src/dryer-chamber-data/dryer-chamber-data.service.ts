@@ -114,7 +114,7 @@ export class DryerChamberDataService {
         firstClassVolume: 0,
         secondClassVolume: 0,
         marketClassVolume: 0,
-        brownClassVolume: 0,
+        thirdClassVolume: 0,
         totalVolume: 0,
       };
 
@@ -130,8 +130,8 @@ export class DryerChamberDataService {
         case 'Рыночный':
           woodClassKey = 'marketClass';
           break;
-        case 'Браун':
-          woodClassKey = 'brownClass';
+        case 'Третий':
+          woodClassKey = 'thirdClass';
           break;
         default:
           break;
@@ -150,7 +150,7 @@ export class DryerChamberDataService {
           outputItem.firstClassVolume +
           outputItem.secondClassVolume +
           outputItem.marketClassVolume +
-          outputItem.brownClassVolume
+          outputItem.thirdClassVolume
         ).toFixed(4),
       );
 
