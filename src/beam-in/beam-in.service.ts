@@ -294,7 +294,7 @@ export class BeamInService {
 
     return {
       data: beamIns,
-      totalVolume: Number(totalVolume.toFixed(2)),
+      totalVolume: Number(totalVolume.toFixed(4)),
     };
   }
 

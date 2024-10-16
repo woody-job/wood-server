@@ -359,7 +359,7 @@ export class BeamArrivalService {
 
     return {
       data: beamArrivals,
-      totalVolume: Number(totalVolume.toFixed(2)),
+      totalVolume: Number(totalVolume.toFixed(4)),
     };
   }
 

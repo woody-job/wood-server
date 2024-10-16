@@ -224,9 +224,13 @@ export class WarehouseService {
             woodType: recordWoodType,
             amount: 0,
             firstClassVolume: 0,
+            firstClassAmount: 0,
             secondClassVolume: 0,
+            secondClassAmount: 0,
             marketClassVolume: 0,
+            marketClassAmount: 0,
             thirdClassVolume: 0,
+            thirdClassAmount: 0,
             totalVolume: 0,
           };
 
@@ -255,6 +259,12 @@ export class WarehouseService {
           warehouseRecord.dimension.volume * warehouseRecord.amount
         ).toFixed(4),
       );
+      outputItem[`${woodClassKey}Amount`] = Number(
+        (outputItem[`${woodClassKey}Amount`] + warehouseRecord.amount).toFixed(
+          4,
+        ),
+      );
+
       outputItem.amount += warehouseRecord.amount;
 
       outputItem.totalVolume = Number(
