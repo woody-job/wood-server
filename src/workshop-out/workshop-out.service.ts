@@ -659,8 +659,8 @@ export class WorkshopOutService {
             case 'Рыночный':
               woodClassKey = 'marketClass';
               break;
-            case 'Браун':
-              woodClassKey = 'brownClass';
+            case 'Третий':
+              woodClassKey = 'thirdClass';
               break;
             default:
               break;

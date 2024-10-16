@@ -100,8 +100,8 @@ export class DataManagementService {
     // Создание сортов доски
     await this.woodClassService.createWoodClass({ name: 'Первый' });
     await this.woodClassService.createWoodClass({ name: 'Второй' });
+    await this.woodClassService.createWoodClass({ name: 'Третий' });
     await this.woodClassService.createWoodClass({ name: 'Рыночный' });
-    await this.woodClassService.createWoodClass({ name: 'Браун' });
 
     // Создание размеров леса
     await this.updateBeamSizes();
@@ -720,9 +720,22 @@ export class DataManagementService {
   }
 
   async addPlanedWoodCondition() {
-    return await this.woodConditionService.createWoodCondition({
+    await this.woodConditionService.createWoodCondition({
       name: 'Строганая',
     });
+  }
+
+  async updateBrownWoodClass() {
+    const oldWoodClass = (await this.woodClassService.getAllWoodClasses()).find(
+      (woodClass) => woodClass.name === 'Браун',
+    );
+
+    if (oldWoodClass) {
+      await this.woodClassService.updateWoodClass({
+        id: oldWoodClass.id,
+        name: 'Третий',
+      });
+    }
   }
 
   async deleteUserCreatedData() {

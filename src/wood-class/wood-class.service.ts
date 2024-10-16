@@ -42,6 +42,18 @@ export class WoodClassService {
     return woodClasses;
   }
 
+  async updateWoodClass(woodClassDto: CreateWoodClassDto & { id: number }) {
+    const existingWoodClass = await this.woodClassRepository.findByPk(
+      woodClassDto.id,
+    );
+
+    if (existingWoodClass) {
+      existingWoodClass.name = woodClassDto.name;
+    }
+
+    await existingWoodClass.save();
+  }
+
   async findWoodClassById(woodClassId: number) {
     const woodClass = await this.woodClassRepository.findByPk(woodClassId);
 
