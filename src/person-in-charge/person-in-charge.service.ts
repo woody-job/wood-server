@@ -12,7 +12,7 @@ export class PersonInChargeService {
 
   async getAllPersonsInCharge() {
     const personsInCharge = await this.personInChargeRepository.findAll({
-      order: [['id', 'DESC']],
+      order: [['secondName', 'ASC']],
     });
 
     return personsInCharge;
