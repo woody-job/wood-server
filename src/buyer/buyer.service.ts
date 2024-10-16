@@ -12,7 +12,7 @@ export class BuyerService {
 
   async getAllBuyers() {
     const buyers = await this.buyerRepository.findAll({
-      order: [['id', 'DESC']],
+      order: [['name', 'ASC']],
     });
 
     return buyers;

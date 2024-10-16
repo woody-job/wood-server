@@ -12,7 +12,7 @@ export class SupplierService {
 
   async getAllSuppliers() {
     const suppliers = await this.supplierRepository.findAll({
-      order: [['id', 'DESC']],
+      order: [['name', 'ASC']],
     });
 
     return suppliers;
