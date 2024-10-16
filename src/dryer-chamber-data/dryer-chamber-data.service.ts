@@ -71,15 +71,18 @@ export class DryerChamberDataService {
     });
 
     let totalVolume = 0;
+    let totalAmount = 0;
 
     dryerChamberDatas.forEach((dryerChamberData) => {
       totalVolume +=
         dryerChamberData.dimension.volume * dryerChamberData.amount;
+      totalAmount += dryerChamberData.amount;
     });
 
     return {
       data: dryerChamberDatas,
       totalVolume: Number(totalVolume.toFixed(4)),
+      totalAmount: Number(totalAmount.toFixed(4)),
     };
   }
 
@@ -100,6 +103,7 @@ export class DryerChamberDataService {
     });
 
     let totalVolume = 0;
+    let totalAmount = 0;
     let outputData = [];
 
     dryerChamberDatas.forEach((dryerChamberData) => {
@@ -175,8 +179,13 @@ export class DryerChamberDataService {
       return total + current.totalVolume;
     }, 0);
 
+    totalAmount = outputData.reduce((total, current) => {
+      return total + current.amount;
+    }, 0);
+
     return {
       totalVolume: Number(totalVolume.toFixed(4)),
+      totalAmount: Number(totalAmount.toFixed(4)),
       data: outputData,
     };
   }
@@ -250,15 +259,18 @@ export class DryerChamberDataService {
     });
 
     let totalVolume = 0;
+    let totalAmount = 0;
 
     dryerChamberDatas.forEach((dryerChamberData) => {
       totalVolume +=
         dryerChamberData.dimension.volume * dryerChamberData.amount;
+      totalAmount += dryerChamberData.amount;
     });
 
     return {
       data: dryerChamberDatas,
       totalVolume: Number(totalVolume.toFixed(4)),
+      totalAmount: Number(totalAmount.toFixed(4)),
     };
   }
 
@@ -587,6 +599,7 @@ export class DryerChamberDataService {
     await Promise.all(
       dryers.map(async (dryerChamber) => {
         let resultDryerVolume = 0;
+        let resultDryerAmount = 0;
 
         const woodByDryerChamber =
           await this.dryerChamberDataRepository.findAll({
@@ -608,8 +621,9 @@ export class DryerChamberDataService {
           );
 
           const totalVolume = woodByWoodClassInDryerChamber.reduce(
-            (total, warehouseRecord) =>
-              total + warehouseRecord.dimension.volume * warehouseRecord.amount,
+            (total, dryerChamberRecord) =>
+              total +
+              dryerChamberRecord.dimension.volume * dryerChamberRecord.amount,
             0,
           );
 

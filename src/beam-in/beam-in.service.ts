@@ -287,14 +287,17 @@ export class BeamInService {
     });
 
     let totalVolume = 0;
+    let totalAmount = 0;
 
     beamIns.forEach((beamIn) => {
       totalVolume += beamIn.beamSize.volume * beamIn.amount;
+      totalAmount += beamIn.amount;
     });
 
     return {
       data: beamIns,
       totalVolume: Number(totalVolume.toFixed(4)),
+      totalAmount: Number(totalAmount.toFixed(4)),
     };
   }
 

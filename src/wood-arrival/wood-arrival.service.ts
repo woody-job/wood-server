@@ -355,14 +355,17 @@ export class WoodArrivalService {
     });
 
     let totalVolume = 0;
+    let totalAmount = 0;
 
     woodArrivals.forEach((woodArrival) => {
       totalVolume += woodArrival.dimension.volume * woodArrival.amount;
+      totalAmount += woodArrival.amount;
     });
 
     return {
       data: woodArrivals,
       totalVolume: Number(totalVolume.toFixed(4)),
+      totalAmount: Number(totalAmount.toFixed(4)),
     };
   }
 
@@ -458,6 +461,7 @@ export class WoodArrivalService {
 
     const tableData = []; // dimension, woodClass, amount, id (woodArrivalId)
     let totalVolume = 0;
+    let totalAmount = 0;
 
     if (!woodArrivals || !woodArrivals.length) {
       return {
@@ -485,11 +489,13 @@ export class WoodArrivalService {
       tableData.push(tableRow);
 
       totalVolume += woodArrival.dimension.volume * woodArrival.amount;
+      totalAmount += woodArrival.amount;
     });
 
     return {
       tableData,
       totalVolume: Number(totalVolume.toFixed(4)),
+      totalAmount: Number(totalAmount.toFixed(4)),
     };
   }
 
