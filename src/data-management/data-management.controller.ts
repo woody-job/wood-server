@@ -26,6 +26,16 @@ export class DataManagementController {
     return this.dataManagementService.updateBeamSizes();
   }
 
+  @Get('/add-planed')
+  addPlanedWoodCondition() {
+    return this.dataManagementService.addPlanedWoodCondition();
+  }
+
+  @Get('/update-brown')
+  updateBrownWoodClass() {
+    return this.dataManagementService.updateBrownWoodClass();
+  }
+
   @ApiOperation({
     summary:
       'Удаление всех записей о работе предприятия (вход, выход, ежедневные данные цехов, поступления, отгрузки, склад, сушилки)',

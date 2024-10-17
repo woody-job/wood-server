@@ -19,7 +19,6 @@ import { BuyerService } from 'src/buyer/buyer.service';
 import { PersonInChargeService } from 'src/person-in-charge/person-in-charge.service';
 import { Buyer } from 'src/buyer/buyer.model';
 import { PersonInCharge } from 'src/person-in-charge/person-in-charge.model';
-import { WoodWarehouseErrorsType } from 'src/types';
 
 @Injectable()
 export class WoodShipmentService {
@@ -42,7 +41,6 @@ export class WoodShipmentService {
     woodType,
     dimension,
     action = 'add',
-    errorMessages,
   }: {
     amount: number;
     woodClass: WoodClass;
@@ -50,7 +48,6 @@ export class WoodShipmentService {
     dimension: Dimension;
     woodCondition: WoodCondition;
     action?: 'add' | 'subtract';
-    errorMessages: WoodWarehouseErrorsType;
   }) {
     const existentWarehouseRecord =
       await this.warehouseService.findWarehouseRecordByWoodParams({
@@ -61,12 +58,15 @@ export class WoodShipmentService {
       });
 
     if (!existentWarehouseRecord) {
-      return errorMessages?.noSuchRecord({
-        woodClass: woodClass.name.toLowerCase(),
-        woodType: woodType.name.toLowerCase(),
-        woodCondition: woodCondition.name.toLowerCase(),
-        dimension: `${dimension.width}x${dimension.thickness}x${dimension.length}`,
+      await this.warehouseService.createWarehouseRecord({
+        amount: -amount,
+        woodConditionId: woodCondition.id,
+        woodClassId: woodClass.id,
+        woodTypeId: woodType.id,
+        dimensionId: dimension.id,
       });
+
+      return;
     }
 
     let newAmount = existentWarehouseRecord.amount;
@@ -77,17 +77,6 @@ export class WoodShipmentService {
 
     if (action === 'subtract') {
       newAmount = existentWarehouseRecord.amount - amount;
-
-      if (newAmount < 0) {
-        return errorMessages?.notEnoughAmount({
-          warehouseAmount: existentWarehouseRecord.amount,
-          newRecordAmount: amount,
-          woodClass: woodClass.name.toLowerCase(),
-          woodType: woodType.name.toLowerCase(),
-          woodCondition: woodCondition.name.toLowerCase(),
-          dimension: `${dimension.width}x${dimension.thickness}x${dimension.length}`,
-        });
-      }
     }
 
     await this.warehouseService.updateWarehouseRecord({
@@ -152,33 +141,14 @@ export class WoodShipmentService {
     }
 
     // Убрать доску со склада
-    const warehouseError = await this.updateWarehouseRecord({
+    await this.updateWarehouseRecord({
       amount,
       woodClass,
       woodType,
       woodCondition,
       dimension,
       action: 'subtract',
-      errorMessages: {
-        noSuchRecord: ({ woodType, woodClass, dimension, woodCondition }) =>
-          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
-           Запись об отгрузке не была создана`,
-        notEnoughAmount: ({
-          woodCondition,
-          warehouseAmount,
-          newRecordAmount,
-          woodType,
-          woodClass,
-          dimension,
-        }) =>
-          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
-            Создать запись об отгрузке на ${newRecordAmount} шт невозможно.`,
-      },
     });
-
-    if (warehouseError) {
-      return warehouseError;
-    }
 
     const woodShipment = await this.woodShipmentRepository.create({
       amount,
@@ -255,18 +225,20 @@ export class WoodShipmentService {
       );
     }
 
-    const errors = (
-      await Promise.all(
-        woodShipmentDtos.map(async (woodShipmentDto) => {
-          return await this.createWoodShipment({
-            woodShipmentDto,
-            buyer,
-            personInCharge,
-            woodCondition,
-          });
-        }),
-      )
-    ).filter((error) => error !== undefined && error !== null);
+    const errors = [];
+
+    for (const woodShipmentDto of woodShipmentDtos) {
+      const error = await this.createWoodShipment({
+        woodShipmentDto,
+        buyer,
+        personInCharge,
+        woodCondition,
+      });
+
+      if (error) {
+        errors.push(error);
+      }
+    }
 
     if (errors.length !== 0) {
       return errors;
@@ -342,33 +314,14 @@ export class WoodShipmentService {
       action = 'subtract';
     }
 
-    const warehouseError = await this.updateWarehouseRecord({
+    await this.updateWarehouseRecord({
       amount: newAmount,
       woodCondition: woodShipment.woodCondition,
       woodClass: woodShipment.woodClass,
       woodType: woodShipment.woodType,
       dimension: woodShipment.dimension,
       action: action,
-      errorMessages: {
-        noSuchRecord: ({ woodType, woodClass, dimension, woodCondition }) =>
-          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
-           Запись об отгрузке не была изменена`,
-        notEnoughAmount: ({
-          woodCondition,
-          warehouseAmount,
-          newRecordAmount,
-          woodType,
-          woodClass,
-          dimension,
-        }) =>
-          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
-            Изменить запись об отгрузке на ${newRecordAmount} шт невозможно.`,
-      },
     });
-
-    if (warehouseError) {
-      throw new HttpException(warehouseError, HttpStatus.BAD_REQUEST);
-    }
 
     if (dimension.id !== woodShipment.dimensionId) {
       await woodShipment.$set('dimension', dimensionId);
@@ -474,14 +427,17 @@ export class WoodShipmentService {
     });
 
     let totalVolume = 0;
+    let totalAmount = 0;
 
     woodShipments.forEach((woodShipment) => {
       totalVolume += woodShipment.dimension.volume * woodShipment.amount;
+      totalAmount += woodShipment.amount;
     });
 
     return {
       data: woodShipments,
-      totalVolume: Number(totalVolume.toFixed(2)),
+      totalVolume: Number(totalVolume.toFixed(4)),
+      totalAmount: Number(totalAmount.toFixed(4)),
     };
   }
 
@@ -513,33 +469,14 @@ export class WoodShipmentService {
     }
 
     // Изменить запись на складе (сырая доска)
-    const warehouseError = await this.updateWarehouseRecord({
+    await this.updateWarehouseRecord({
       amount: woodShipment.amount,
       woodCondition: woodShipment.woodCondition,
       woodClass: woodShipment.woodClass,
       woodType: woodShipment.woodType,
       dimension: woodShipment.dimension,
       action: 'add',
-      errorMessages: {
-        noSuchRecord: ({ woodType, woodClass, dimension, woodCondition }) =>
-          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
-           Запись об отгрузке не была удалена`,
-        notEnoughAmount: ({
-          woodCondition,
-          warehouseAmount,
-          newRecordAmount,
-          woodType,
-          woodClass,
-          dimension,
-        }) =>
-          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
-            Удалить запись об отгрузке на ${newRecordAmount} шт невозможно.`,
-      },
     });
-
-    if (warehouseError) {
-      throw new HttpException(warehouseError, HttpStatus.BAD_REQUEST);
-    }
 
     await woodShipment.destroy();
   }
@@ -603,11 +540,13 @@ export class WoodShipmentService {
 
     const tableData = []; // dimension, woodClass, amount, id (woodShipmentId)
     let totalVolume = 0;
+    let totalAmount = 0;
 
     if (!woodShipments || !woodShipments.length) {
       return {
         tableData: [],
         totalVolume: 0,
+        totalAmount: 0,
       };
     }
 
@@ -630,18 +569,20 @@ export class WoodShipmentService {
           ? `${woodShipment.personInCharge.initials} ${woodShipment.personInCharge.secondName}`
           : null,
         volume: Number(
-          (woodShipment.dimension.volume * woodShipment.amount).toFixed(2),
+          (woodShipment.dimension.volume * woodShipment.amount).toFixed(4),
         ),
       };
 
       tableData.push(tableRow);
 
       totalVolume += woodShipment.dimension.volume * woodShipment.amount;
+      totalAmount += woodShipment.amount;
     });
 
     return {
       tableData,
       totalVolume: Number(totalVolume.toFixed(4)),
+      totalAmount: Number(totalAmount.toFixed(4)),
     };
   }
 

@@ -25,7 +25,6 @@ import { WoodConditionService } from 'src/wood-condition/wood-condition.service'
 import { WarehouseService } from 'src/warehouse/warehouse.service';
 import { BeamInService } from 'src/beam-in/beam-in.service';
 import { WorkshopDailyDataService } from 'src/workshop-daily-data/workshop-daily-data.service';
-import { WoodWarehouseErrorsType } from 'src/types';
 
 @Injectable()
 export class WorkshopOutService {
@@ -55,7 +54,6 @@ export class WorkshopOutService {
     dimension,
     action = 'add',
     isCreate = false,
-    errorMessages,
   }: {
     amount: number;
     woodClass: WoodClass;
@@ -63,7 +61,6 @@ export class WorkshopOutService {
     dimension: Dimension;
     action?: 'add' | 'subtract';
     isCreate?: boolean;
-    errorMessages?: WoodWarehouseErrorsType | undefined;
   }) {
     // Внести на склад сырую доску
     const wetWoodCondition =
@@ -97,15 +94,16 @@ export class WorkshopOutService {
       });
 
     if (!existentWarehouseRecord) {
-      throw new HttpException(
-        errorMessages?.noSuchRecord({
-          woodClass: woodClass.name.toLowerCase(),
-          woodType: woodType.name.toLowerCase(),
-          woodCondition: wetWoodCondition.name.toLowerCase(),
-          dimension: `${dimension.width}x${dimension.thickness}x${dimension.length}`,
-        }),
-        HttpStatus.BAD_REQUEST,
-      );
+      // Как поступление сырой доски
+      await this.warehouseService.createWarehouseRecord({
+        amount: amount,
+        woodConditionId: wetWoodCondition.id,
+        woodClassId: woodClass.id,
+        woodTypeId: woodType.id,
+        dimensionId: dimension.id,
+      });
+
+      return;
     }
 
     let newAmount = existentWarehouseRecord.amount;
@@ -116,20 +114,6 @@ export class WorkshopOutService {
 
     if (action === 'subtract') {
       newAmount = existentWarehouseRecord.amount - amount;
-
-      if (newAmount < 0) {
-        throw new HttpException(
-          errorMessages?.notEnoughAmount({
-            warehouseAmount: existentWarehouseRecord.amount,
-            newRecordAmount: amount,
-            woodClass: woodClass.name.toLowerCase(),
-            woodType: woodType.name.toLowerCase(),
-            woodCondition: wetWoodCondition.name.toLowerCase(),
-            dimension: `${dimension.width}x${dimension.thickness}x${dimension.length}`,
-          }),
-          HttpStatus.BAD_REQUEST,
-        );
-      }
     }
 
     await this.warehouseService.updateWarehouseRecord({
@@ -341,21 +325,6 @@ export class WorkshopOutService {
       woodType: workshopOut.woodType,
       dimension: workshopOut.dimension,
       action: action,
-      errorMessages: {
-        noSuchRecord: ({ woodType, woodClass, dimension, woodCondition }) =>
-          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
-           Запись о выходе из цеха не была изменена`,
-        notEnoughAmount: ({
-          woodCondition,
-          warehouseAmount,
-          newRecordAmount,
-          woodType,
-          woodClass,
-          dimension,
-        }) =>
-          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
-            Изменить запись о выходе из цеха на ${newRecordAmount} шт невозможно.`,
-      },
     });
 
     // Цену доски пользователь не передает, она получается из базы данных по другим внесенным
@@ -429,15 +398,19 @@ export class WorkshopOutService {
     });
 
     let totalWorkshopOutVolume = 0;
+    let totalWorkshopOutAmount = 0;
 
     workshopOuts.forEach((workshopOut) => {
       totalWorkshopOutVolume +=
         workshopOut.dimension.volume * workshopOut.amount;
+
+      totalWorkshopOutAmount = totalWorkshopOutAmount + workshopOut.amount;
     });
 
     return {
       data: workshopOuts,
-      totalWorkshopOutVolume: Number(totalWorkshopOutVolume.toFixed(2)),
+      totalWorkshopOutVolume: Number(totalWorkshopOutVolume.toFixed(4)),
+      totalWorkshopOutAmount,
     };
   }
 
@@ -492,15 +465,18 @@ export class WorkshopOutService {
     });
 
     let totalWorkshopOutVolume = 0;
+    let totalWorkshopOutAmount = 0;
 
     workshopOuts.forEach((workshopOut) => {
       totalWorkshopOutVolume +=
         workshopOut.dimension.volume * workshopOut.amount;
+      totalWorkshopOutAmount += workshopOut.amount;
     });
 
     return {
       data: workshopOuts,
-      totalWorkshopOutVolume: Number(totalWorkshopOutVolume.toFixed(2)),
+      totalWorkshopOutVolume: Number(totalWorkshopOutVolume.toFixed(4)),
+      totalWorkshopOutAmount: Number(totalWorkshopOutAmount.toFixed(4)),
     };
   }
 
@@ -535,21 +511,6 @@ export class WorkshopOutService {
       woodType: workshopOut.woodType,
       dimension: workshopOut.dimension,
       action: 'subtract',
-      errorMessages: {
-        noSuchRecord: ({ woodType, woodClass, dimension, woodCondition }) =>
-          `На складе нет доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
-           Запись о выходе из цеха не была удалена`,
-        notEnoughAmount: ({
-          woodCondition,
-          warehouseAmount,
-          newRecordAmount,
-          woodType,
-          woodClass,
-          dimension,
-        }) =>
-          `На складе есть только ${warehouseAmount} шт выбранной доски с параметрами "${woodCondition}", "${woodType}", "сорт ${woodClass}", "${dimension}". 
-            Удалить запись о выходе из цеха на ${newRecordAmount} шт невозможно.`,
-      },
     });
 
     await workshopOut.destroy();
@@ -604,21 +565,43 @@ export class WorkshopOutService {
     const woodClasses = await this.woodClassService.getAllWoodClasses();
 
     let output = [];
+    let totalResultBeamInVolume = 0;
+    let totalResultBeamInAmount = 0;
+    let totalResultWoodsVolume = 0;
+    let totalResultWoodsAmount = 0;
 
     await Promise.all(
       days.map(async (dayDate) => {
-        const { data: workshopOutData, totalWorkshopOutVolume } =
-          await this.getAllWoodOutForWorkshopForADay({
-            workshopId,
-            date: dayDate,
-          });
+        const {
+          data: workshopOutData,
+          totalWorkshopOutVolume,
+          totalWorkshopOutAmount,
+        } = await this.getAllWoodOutForWorkshopForADay({
+          workshopId,
+          date: dayDate,
+        });
 
-        const { totalVolume: totalBeamInVolume } =
-          await this.beamInService.getAllBeamInForWorkshop({
-            workshopId,
-            startDate: dayDate,
-            endDate: dayDate,
-          });
+        const {
+          totalVolume: totalBeamInVolume,
+          totalAmount: totalBeamInAmount,
+        } = await this.beamInService.getAllBeamInForWorkshop({
+          workshopId,
+          startDate: dayDate,
+          endDate: dayDate,
+        });
+
+        totalResultBeamInVolume = Number(
+          (totalResultBeamInVolume + totalBeamInVolume).toFixed(4),
+        );
+        totalResultBeamInAmount = Number(
+          (totalResultBeamInAmount + totalBeamInAmount).toFixed(4),
+        );
+        totalResultWoodsVolume = Number(
+          (totalResultWoodsVolume + totalWorkshopOutVolume).toFixed(4),
+        );
+        totalResultWoodsAmount = Number(
+          (totalResultWoodsAmount + totalWorkshopOutAmount).toFixed(4),
+        );
 
         const {
           totalWoodPrice,
@@ -635,14 +618,14 @@ export class WorkshopOutService {
 
         const outputItem: Record<string, any> = {};
         const totalWorkshopOutPercentage = Number(
-          ((totalWorkshopOutVolume / totalBeamInVolume) * 100).toFixed(2),
+          ((totalWorkshopOutVolume / totalBeamInVolume) * 100).toFixed(4),
         );
 
         const totalWorkshopOutPercentageForSecondWorkshop = Number(
           (
             (totalWorkshopOutVolume / (totalWorkshopOutVolume * 2)) *
             100
-          ).toFixed(2),
+          ).toFixed(4),
         );
 
         outputItem.id = moment(dayDate).date() + moment(dayDate).month();
@@ -655,12 +638,14 @@ export class WorkshopOutService {
           (workshop.id === 2
             ? totalWorkshopOutVolume * 2
             : totalBeamInVolume
-          ).toFixed(2),
+          ).toFixed(4),
         );
+        outputItem.totalBeamInAmount = totalBeamInAmount;
         outputItem.totalWorkshopOutPercentage =
           workshop.id === 2
             ? totalWorkshopOutPercentageForSecondWorkshop
             : totalWorkshopOutPercentage;
+        outputItem.totalWorkshopOutAmount = totalWorkshopOutAmount;
         outputItem.totalWoodPrice = totalWoodPrice;
         outputItem.priceOfRawMaterials = priceOfRawMaterials;
         outputItem.sawingPrice = sawingPrice;
@@ -687,6 +672,17 @@ export class WorkshopOutService {
             0,
           );
 
+          const currentWoodClassAmount = workshopOutDataByWoodClass.reduce(
+            (total, workshopRecord) => {
+              if (workshopRecord.woodClass.id === woodClass.id) {
+                return total + workshopRecord.amount;
+              }
+
+              return total;
+            },
+            0,
+          );
+
           const localTotalBeamInVolume =
             workshop.id === 2 ? totalWorkshopOutVolume * 2 : totalBeamInVolume;
 
@@ -705,8 +701,8 @@ export class WorkshopOutService {
             case 'Рыночный':
               woodClassKey = 'marketClass';
               break;
-            case 'Браун':
-              woodClassKey = 'brownClass';
+            case 'Третий':
+              woodClassKey = 'thirdClass';
               break;
             default:
               break;
@@ -715,8 +711,11 @@ export class WorkshopOutService {
           outputItem[`${woodClassKey}Volume`] = Number(
             currentWoodClassVolume.toFixed(4),
           );
+          outputItem[`${woodClassKey}Amount`] = Number(
+            currentWoodClassAmount.toFixed(4),
+          );
           outputItem[`${woodClassKey}Percentage`] = Number(
-            percentageForCurrentWoodClassFromTotalVolume.toFixed(2),
+            percentageForCurrentWoodClassFromTotalVolume.toFixed(4),
           );
         });
 
@@ -741,7 +740,13 @@ export class WorkshopOutService {
       return 0;
     });
 
-    return output;
+    return {
+      data: output,
+      totalBeamInVolume: totalResultBeamInVolume,
+      totalBeamInAmount: totalResultBeamInAmount,
+      totalWoodsVolume: totalResultWoodsVolume,
+      totalWoodsAmount: totalResultWoodsAmount,
+    };
   }
 
   async deleteAllWorkshopOut() {

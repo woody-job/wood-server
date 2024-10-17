@@ -19,7 +19,6 @@ import { WorkshopOutService } from 'src/workshop-out/workshop-out.service';
 import { BeamWarehouseService } from 'src/beam-warehouse/beam-warehouse.service';
 import { WoodNamingService } from 'src/wood-naming/wood-naming.service';
 import { WoodNaming } from 'src/wood-naming/wood-naming.model';
-import { BeamWarehouseErrorsType } from 'src/types';
 
 @Injectable()
 export class BeamInService {
@@ -38,12 +37,10 @@ export class BeamInService {
     woodNaming,
     volume,
     action = 'add',
-    errorMessages,
   }: {
     woodNaming: WoodNaming;
     volume: number;
     action?: 'add' | 'subtract';
-    errorMessages: BeamWarehouseErrorsType;
   }) {
     const existentWarehouseRecord =
       await this.beamWarehouseService.findWarehouseRecordByBeamParams({
@@ -51,12 +48,12 @@ export class BeamInService {
       });
 
     if (!existentWarehouseRecord) {
-      throw new HttpException(
-        errorMessages.noSuchRecord({
-          woodNaming: woodNaming.name.toLowerCase(),
-        }),
-        HttpStatus.BAD_REQUEST,
-      );
+      await this.beamWarehouseService.createWarehouseRecord({
+        volume: -volume,
+        woodNamingId: woodNaming.id,
+      });
+
+      return;
     }
 
     let newVolume = Number(existentWarehouseRecord.volume);
@@ -67,17 +64,6 @@ export class BeamInService {
 
     if (action === 'subtract') {
       newVolume = Number(existentWarehouseRecord.volume) - volume;
-
-      if (newVolume < 0) {
-        throw new HttpException(
-          errorMessages.notEnoughVolume({
-            warehouseVolume: Number(existentWarehouseRecord.volume).toFixed(4),
-            newRecordVolume: Number(volume).toFixed(4),
-            woodNaming: woodNaming.name.toLocaleLowerCase(),
-          }),
-          HttpStatus.BAD_REQUEST,
-        );
-      }
     }
 
     await this.beamWarehouseService.updateWarehouseRecord({
@@ -119,13 +105,6 @@ export class BeamInService {
         woodNaming: existentBeamIn.woodNaming,
         action: 'subtract',
         volume: beamInVolume,
-        errorMessages: {
-          noSuchRecord: ({ woodNaming }) =>
-            `На складе нет леса "${woodNaming}". Запись о входе в цех не была создана`,
-          notEnoughVolume: ({ warehouseVolume, newRecordVolume, woodNaming }) =>
-            `На складе есть только ${warehouseVolume} м3 выбранного леса "${woodNaming}". 
-            Создать запись о входе в цех ${newRecordVolume} м3 леса невозможно.`,
-        },
       });
 
       existentBeamIn.amount = existentBeamIn.amount + amount;
@@ -159,9 +138,21 @@ export class BeamInService {
       );
     }
 
-    const isBeamSizeInWoodNamingBoundaries =
-      woodNaming.maxDiameter! >= beamSize.diameter &&
-      woodNaming.minDiameter! <= beamSize.diameter;
+    let isBeamSizeInWoodNamingBoundaries = false;
+
+    // Если крупный лес
+    if (woodNaming.maxDiameter === null) {
+      isBeamSizeInWoodNamingBoundaries =
+        woodNaming.minDiameter! <= beamSize.diameter;
+    } else if (woodNaming.minDiameter === null) {
+      // Если пиловочник
+      isBeamSizeInWoodNamingBoundaries =
+        woodNaming.maxDiameter! >= beamSize.diameter;
+    } else {
+      isBeamSizeInWoodNamingBoundaries =
+        woodNaming.maxDiameter! >= beamSize.diameter &&
+        woodNaming.minDiameter! <= beamSize.diameter;
+    }
 
     if (!isBeamSizeInWoodNamingBoundaries) {
       throw new HttpException(
@@ -177,13 +168,6 @@ export class BeamInService {
       woodNaming: woodNaming,
       action: 'subtract',
       volume: beamInVolume,
-      errorMessages: {
-        noSuchRecord: ({ woodNaming }) =>
-          `На складе нет леса "${woodNaming}". Запись о входе в цех не была создана`,
-        notEnoughVolume: ({ warehouseVolume, newRecordVolume, woodNaming }) =>
-          `На складе есть только ${warehouseVolume} м3 выбранного леса "${woodNaming}". 
-            Создать запись о входе в цех ${newRecordVolume} м3 леса невозможно.`,
-      },
     });
 
     const beamIn = await this.beamInRepository.create({
@@ -241,13 +225,6 @@ export class BeamInService {
       woodNaming: beamIn.woodNaming,
       action,
       volume: newBeamInVolume,
-      errorMessages: {
-        noSuchRecord: ({ woodNaming }) =>
-          `На складе нет леса "${woodNaming}". Запись о входе в цех не была изменена`,
-        notEnoughVolume: ({ warehouseVolume, newRecordVolume, woodNaming }) =>
-          `На складе есть только ${warehouseVolume} м3 выбранного леса "${woodNaming}". 
-            Изменить запись входа в цех на ${newRecordVolume} м3 невозможно.`,
-      },
     });
 
     beamIn.amount = amount;
@@ -310,14 +287,17 @@ export class BeamInService {
     });
 
     let totalVolume = 0;
+    let totalAmount = 0;
 
     beamIns.forEach((beamIn) => {
       totalVolume += beamIn.beamSize.volume * beamIn.amount;
+      totalAmount += beamIn.amount;
     });
 
     return {
       data: beamIns,
-      totalVolume: Number(totalVolume.toFixed(2)),
+      totalVolume: Number(totalVolume.toFixed(4)),
+      totalAmount: Number(totalAmount.toFixed(4)),
     };
   }
 
@@ -342,13 +322,6 @@ export class BeamInService {
       woodNaming: beamIn.woodNaming,
       volume: beamInVolume,
       action: 'add',
-      errorMessages: {
-        noSuchRecord: ({ woodNaming }) =>
-          `На складе нет леса "${woodNaming}". Запись о входе в цех не была удалена`,
-        notEnoughVolume: ({ warehouseVolume, newRecordVolume, woodNaming }) =>
-          `На складе есть только ${warehouseVolume} м3 выбранного леса "${woodNaming}". 
-            Удалить запись о входе в цех ${newRecordVolume} м3 леса невозможно.`,
-      },
     });
 
     await beamIn.destroy();

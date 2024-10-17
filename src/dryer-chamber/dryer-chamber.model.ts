@@ -32,16 +32,6 @@ export class DryerChamber extends Model<
   })
   name: string;
 
-  @ApiProperty({
-    example: '63',
-    description: 'Количество циклов сушильной камеры',
-  })
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: false,
-  })
-  chamberIterationCount: number;
-
   @HasMany(() => DryerChamberData)
   dryerChamberDatas: DryerChamberData[];
 }

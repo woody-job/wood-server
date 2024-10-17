@@ -160,8 +160,8 @@ export class WarehouseService {
       );
     }
 
-    // Если новое количество <= 0, то запись на складе удаляется.
-    if (amount <= 0) {
+    // Если новое количество === 0, то запись на складе удаляется.
+    if (amount === 0) {
       await this.deleteWarehouseRecord(warehouseRecord.id);
 
       return;
@@ -198,9 +198,11 @@ export class WarehouseService {
       where: {
         woodConditionId,
       },
+      order: [['id', 'DESC']],
     });
 
     let totalVolume = 0;
+    let totalAmount = 0;
     let outputData = [];
 
     warehouseRecords.forEach((warehouseRecord) => {
@@ -223,9 +225,13 @@ export class WarehouseService {
             woodType: recordWoodType,
             amount: 0,
             firstClassVolume: 0,
+            firstClassAmount: 0,
             secondClassVolume: 0,
+            secondClassAmount: 0,
             marketClassVolume: 0,
-            brownClassVolume: 0,
+            marketClassAmount: 0,
+            thirdClassVolume: 0,
+            thirdClassAmount: 0,
             totalVolume: 0,
           };
 
@@ -241,8 +247,8 @@ export class WarehouseService {
         case 'Рыночный':
           woodClassKey = 'marketClass';
           break;
-        case 'Браун':
-          woodClassKey = 'brownClass';
+        case 'Третий':
+          woodClassKey = 'thirdClass';
           break;
         default:
           break;
@@ -254,6 +260,12 @@ export class WarehouseService {
           warehouseRecord.dimension.volume * warehouseRecord.amount
         ).toFixed(4),
       );
+      outputItem[`${woodClassKey}Amount`] = Number(
+        (outputItem[`${woodClassKey}Amount`] + warehouseRecord.amount).toFixed(
+          4,
+        ),
+      );
+
       outputItem.amount += warehouseRecord.amount;
 
       outputItem.totalVolume = Number(
@@ -261,8 +273,8 @@ export class WarehouseService {
           outputItem.firstClassVolume +
           outputItem.secondClassVolume +
           outputItem.marketClassVolume +
-          outputItem.brownClassVolume
-        ).toFixed(2),
+          outputItem.thirdClassVolume
+        ).toFixed(4),
       );
 
       outputItem.id = Number(
@@ -278,8 +290,13 @@ export class WarehouseService {
       return total + current.totalVolume;
     }, 0);
 
+    totalAmount = outputData.reduce((total, current) => {
+      return total + current.amount;
+    }, 0);
+
     return {
-      totalVolume: Number(totalVolume.toFixed(2)),
+      totalVolume: Number(totalVolume.toFixed(4)),
+      totalAmount: Number(totalAmount.toFixed(4)),
       data: outputData,
     };
   }

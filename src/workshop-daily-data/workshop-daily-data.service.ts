@@ -252,7 +252,7 @@ export class WorkshopDailyDataService {
 
     beamInsForDate.forEach((beamIn) => {
       const volume = Number(
-        (beamIn.beamSize.volume * beamIn.amount).toFixed(2),
+        (beamIn.beamSize.volume * beamIn.amount).toFixed(4),
       );
 
       output.priceOfRawMaterials += workshop.priceOfRawMaterials * volume;
@@ -295,12 +295,12 @@ export class WorkshopDailyDataService {
     }
 
     return {
-      totalWoodPrice: Number(output.totalWoodPrice.toFixed(2)),
-      priceOfRawMaterials: Number(output.priceOfRawMaterials.toFixed(2)),
-      sawingPrice: Number(output.sawingPrice.toFixed(2)),
-      profit: Number(output.profit.toFixed(2)),
+      totalWoodPrice: Number(output.totalWoodPrice.toFixed(4)),
+      priceOfRawMaterials: Number(output.priceOfRawMaterials.toFixed(4)),
+      sawingPrice: Number(output.sawingPrice.toFixed(4)),
+      profit: Number(output.profit.toFixed(4)),
       profitPerUnit: output.profitPerUnit
-        ? Number(output.profitPerUnit.toFixed(2))
+        ? Number(output.profitPerUnit.toFixed(4))
         : 0,
       dimensionId: output.dimensionId,
       woodNamingId: output.woodNamingId,
