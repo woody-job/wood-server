@@ -641,6 +641,7 @@ export class WorkshopOutService {
           ).toFixed(4),
         );
         outputItem.totalBeamInAmount = totalBeamInAmount;
+        outputItem.totalWorkshopOutVolume = totalWorkshopOutVolume;
         outputItem.totalWorkshopOutPercentage =
           workshop.id === 2
             ? totalWorkshopOutPercentageForSecondWorkshop
