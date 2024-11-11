@@ -1,13 +1,8 @@
-import { IsNotEmpty, IsNumber } from 'class-validator';
+import { IsNumber, IsOptional } from 'class-validator';
+import { CreateDryerChamberDataDto } from './create-dryer-chamber-data.dto';
 
-export class RemoveWoodFromChamberDto {
+export class RemoveWoodFromChamberDto extends CreateDryerChamberDataDto {
   @IsNumber()
+  @IsOptional()
   readonly dryerChamberDataRecordId: number;
-
-  @IsNumber()
-  readonly woodClassId: number;
-
-  @IsNumber()
-  @IsNotEmpty()
-  readonly amount: number;
 }
