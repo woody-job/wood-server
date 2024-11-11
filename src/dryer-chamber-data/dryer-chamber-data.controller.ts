@@ -46,16 +46,16 @@ export class DryerChamberDataController {
   // Для тестирования
   @ApiOperation({
     summary:
-      'Получение всех записей о доске в сушилках (c фильтрацией по датам)',
+      'Получение всех записей о доске, вышедшей из сушилок (c фильтрацией по датам)',
   })
   @Roles('SUPERADMIN', 'ADMIN', 'USER')
   @UseGuards(RolesGuard)
-  @Get('/all-records')
+  @Get('/all-dryed-records')
   getAll(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
   ) {
-    return this.dryerChamberDataService.getAllRecords({
+    return this.dryerChamberDataService.getAllDryedRecords({
       startDate,
       endDate,
     });
