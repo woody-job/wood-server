@@ -91,6 +91,8 @@ export class BeamInService {
           `${year}-${month}-${day}`,
         ),
         beamSizeId,
+        woodNamingId,
+        workshopId,
       },
       include: [WoodNaming, BeamSize],
     });
